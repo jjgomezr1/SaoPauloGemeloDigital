@@ -40,6 +40,10 @@ TIPOS = {"observado", "estimado", "proxy", "declarado"}
 ADVERTENCIAS = {
     "F06": "Medida en una sola estación (IAG Água Funda); no representa toda la ciudad.",
     "F08": "Es una estimación del IBGE para 2021, no un conteo.",
+    "F03": "Cuenta establecimientos (no camas ni atenciones) de 2025, de todas las redes. "
+    "Un mismo establecimiento puede ofrecer varios servicios.",
+    "F04": "Valores en R$ corrientes, sin ajustar por inflación: no se comparan directamente entre años. "
+    "Los ingresos son realizados y los gastos, empenhados.",
     "F11": "Son establecimientos con registro formal (RAIS), no empresas ni empleos. "
     "La serie RAIS tiene un quiebre desde 2022 por cambios en la captación.",
     "F12": "Mide dónde está el empleo, no dónde vive quien lo ocupa. "
@@ -1222,6 +1226,92 @@ def construir_temperatura():
     publicar("indicadores/ambiente/temperatura.json", {**cabecera, "indicadores": registros})
 
 
+def construir_municipio():
+    """F03 salud por red y F04 finanzas del municipio. Dos tablas de ciudad (sin desglose por distrito).
+
+    Salud: un indicador por red y tipo de servicio, más el total por red y el total de la ciudad.
+    Finanzas: la serie anual de ingresos y gastos totales, y el detalle por concepto del último año.
+    """
+    salud = pd.read_csv(LAGO / "salud_establecimientos.csv")
+    finanzas = pd.read_csv(LAGO / "finanzas_municipio.csv")
+    registros = []
+    muni = {"nivel": "municipio", "codigo": "MSP", "nombre": "Município de São Paulo", "fuente_id": "F03"}
+
+    # Salud: total de la ciudad, total por red y detalle por red y tipo de servicio (año 2025).
+    registros.append(
+        indicador(
+            clave="salud_establecimientos_total",
+            campo_lago="establecimientos",
+            valor=int(salud["establecimientos"].sum()),
+            unidad="Establecimientos",
+            vigencia=2025,
+            calculo="suma de los establecimientos de todas las redes y tipos de servicio",
+            **muni,
+        )
+    )
+    for red, grupo in salud.groupby("red"):
+        registros.append(
+            indicador(
+                clave=f"salud_establecimientos_red_{red.lower()}",
+                campo_lago="establecimientos",
+                valor=int(grupo["establecimientos"].sum()),
+                unidad="Establecimientos",
+                vigencia=2025,
+                calculo=f"establecimientos de la red {red} (suma de sus tipos de servicio)",
+                **muni,
+            )
+        )
+
+    # Finanzas: serie anual del total de ingresos y del total de gastos.
+    for tipo, grupo in finanzas.groupby("tipo"):
+        por_anio = grupo.groupby("anio")["valor_rs"].sum()
+        clave = "finanzas_ingresos" if tipo == "Receita" else "finanzas_gastos"
+        etiqueta = "Ingresos" if tipo == "Receita" else "Gastos"
+        for anio, total in por_anio.items():
+            registros.append(
+                indicador(
+                    clave=clave,
+                    campo_lago="valor_rs",
+                    valor=None if pd.isna(total) else float(total),
+                    unidad="R$",
+                    nivel="municipio",
+                    codigo="MSP",
+                    nombre="Município de São Paulo",
+                    fuente_id="F04",
+                    vigencia=int(anio),
+                    calculo=f"suma de valor_rs de todos los conceptos de {etiqueta.lower()} en el año",
+                )
+            )
+
+    cabecera = {"seccion": "municipio", "pregunta": "", "generado": dt.date.today().isoformat()}
+    publicar("indicadores/municipio/indicadores.json", {**cabecera, "indicadores": registros})
+
+    # Tablas de detalle para la sección: salud por red y tipo, y finanzas por concepto del último año.
+    salud_detalle = salud.to_dict(orient="records")
+    ultimo = int(finanzas["anio"].max())
+    fin = finanzas[finanzas["anio"] == ultimo].copy()
+    fin["valor_rs"] = fin["valor_rs"].astype("Float64")
+    finanzas_detalle = [
+        {
+            "anio": int(r["anio"]),
+            "tipo": r["tipo"],
+            "concepto": r["concepto"],
+            "valor_rs": None if pd.isna(r["valor_rs"]) else float(r["valor_rs"]),
+        }
+        for r in fin.to_dict(orient="records")
+    ]
+    publicar(
+        "indicadores/municipio/detalle.json",
+        {
+            **cabecera,
+            "salud_vigencia": "2025",
+            "finanzas_anio": ultimo,
+            "salud": salud_detalle,
+            "finanzas": finanzas_detalle,
+        },
+    )
+
+
 def construir_catalogo():
     fuentes = pd.read_csv(FUENTES_CSV, dtype=str).fillna("")
     dicc = pd.read_csv(DICCIONARIO_CSV, dtype=str).fillna("")
@@ -1238,6 +1328,7 @@ def main():
     construir_transporte()
     construir_equipamientos()
     construir_gente()
+    construir_municipio()
     construir_ambiente()
     construir_temperatura()
 

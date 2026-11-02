@@ -14,6 +14,7 @@ const Ambiente = lazy(() => import("./secciones/Ambiente"));
 const Empleo = lazy(() => import("./secciones/Empleo"));
 const Gente = lazy(() => import("./secciones/Gente"));
 const Mapa3D = lazy(() => import("./secciones/Mapa3D"));
+const Municipio = lazy(() => import("./secciones/Municipio"));
 const Transporte = lazy(() => import("./secciones/Transporte"));
 
 // Las rutas viven en el hash, así que el salto no puede ser un enlace a #contenido: mueve el foco.
@@ -91,6 +92,7 @@ export default function App() {
             {seccion.id === "empleo" && <Empleo />}
             {seccion.id === "transporte" && <Transporte />}
             {seccion.id === "gente" && <Gente />}
+            {seccion.id === "municipio" && <Municipio />}
             {seccion.id === "ambiente" && <Ambiente />}
             {seccion.id === "fuentes" && <Fuentes />}
             {seccion.id === "no-cubrimos" && <NoCubrimos />}

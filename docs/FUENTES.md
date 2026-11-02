@@ -4,7 +4,7 @@ Qué fuente del Diccionario (`data/Diccionario_de_datos_TallerDatos.xlsx`) entra
 dónde aparece. Los IDs son los de la hoja «1. Fuentes». El detalle de cada campo está en la hoja
 «2. Diccionario» y, ya exportado, en `data/diccionario.csv` y en la sección «Fuentes y método» del sitio.
 
-Resumen: de las 41 fuentes del catálogo, 33 están en el lago y se publican; 8 quedan por fuera (al final,
+Resumen: de las 41 fuentes del catálogo, 35 están en el lago y se publican; 6 quedan por fuera (al final,
 con el motivo).
 
 ## P1. Transporte y equipamientos
@@ -63,6 +63,20 @@ por eso no hay mapa de temperatura y cada cifra lleva esa advertencia. El sitio 
 la normal 1991-2020 a partir de los doce meses de cada año; el lago guarda solo los meses, como pide el
 Diccionario.
 
+## Municipio
+
+Cifras de la ciudad en conjunto (sin desglose por distrito), en la sección «Municipio».
+
+| ID | Qué es | Publica | Para qué se usa | Archivo del lago |
+|---|---|---|---|---|
+| F03 | Establecimientos y servicios de salud por red, 2025 | SMS, vía Infocidade | Establecimientos de salud por red (municipal, estadual, federal, privada) y por tipo de servicio. | `salud_establecimientos.csv` |
+| F04 | Ingresos por fuente y gastos por categoría, 2016-2025 | SF, vía Infocidade | Serie anual de ingresos y gastos del municipio y detalle por concepto del último año. | `finanzas_municipio.csv` |
+
+Las dos son del municipio en conjunto. Salud cuenta establecimientos (no camas ni atenciones) y un mismo
+establecimiento puede ofrecer varios servicios. Finanzas está en R$ corrientes, sin ajustar por inflación
+(ingresos realizados, gastos empenhados): por eso cada cifra lleva su advertencia y la sección no compara
+años directamente.
+
 ## Base geográfica (no son fuentes del catálogo)
 
 - **Distritos y subprefeituras** de GeoSampa (WFS): el eje territorial de todo el lago.
@@ -75,8 +89,6 @@ Diccionario.
 | ID | Qué es | Por qué no está |
 |---|---|---|
 | F02 | Visitas al artículo «São Paulo» en Wikipedia | No responde ninguna de las dos preguntas. |
-| F03 | Establecimientos de salud | Pendiente para la sección «Municipio». |
-| F04 | Ingresos y gastos municipales | Pendiente para la sección «Municipio». |
 | F08 | Estimación de población del IBGE | La API (`servicodados.ibge.gov.br`) no respondía al integrarla, en octubre de 2026. |
 | F09 | Olho Vivo (buses en tiempo real) | Necesita llave y un servidor; el sitio es estático. |
 | F10 | Tráfico del portal de datos abiertos | Descartada en el catálogo. |

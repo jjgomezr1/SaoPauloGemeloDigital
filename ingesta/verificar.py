@@ -51,10 +51,14 @@ ARCHIVOS_LAGO = {
     "geo/estadios.geojson": ["F34"],
     "geo/escuelas_infantil.geojson": ["F39"],
     "geo/escuelas_basica.geojson": ["F40"],
+    "salud_establecimientos.csv": ["F03"],
+    "finanzas_municipio.csv": ["F04"],
 }
 CAMPOS_CONTRATO = {"id", "campo_lago", "valor", "unidad", "nivel", "fuente_id", "vigencia", "tipo", "advertencia"}
 ADVERTENCIA_OBLIGATORIA = {
     "F01",
+    "F03",
+    "F04",
     "F05",
     "F06",
     "F07",
@@ -329,6 +333,33 @@ def verificar_temperatura():
     prueba("F06: la normal 1991-2020 recalculada coincide con la de la fuente (15,32 °C)", abs(normal - 15.32) < 0.01)
 
 
+def verificar_municipio():
+    print("Municipio (F03 salud, F04 finanzas)")
+    salud = pd.read_csv(LAGO / "salud_establecimientos.csv")
+    prueba(
+        "F03: una fila por red y tipo de servicio, sin repetir", not salud.duplicated(["red", "tipo_servicio"]).any()
+    )
+    prueba("F03: establecimientos positivos (sin filas de total ni ceros)", (salud["establecimientos"] > 0).all())
+    redes = set(salud["red"])
+    prueba(
+        "F03: las redes son Municipal, Estadual, Federal o Privada",
+        redes <= {"Municipal", "Estadual", "Federal", "Privada"},
+        f"llegaron {sorted(redes)}",
+    )
+
+    fin = pd.read_csv(LAGO / "finanzas_municipio.csv")
+    prueba(
+        "F04: una fila por año, tipo y concepto, sin repetir", not fin.duplicated(["anio", "tipo", "concepto"]).any()
+    )
+    prueba("F04: los tipos son Receita y Despesa", set(fin["tipo"]) == {"Receita", "Despesa"})
+    prueba("F04: ningún concepto es un total", not fin["concepto"].str.lower().str.contains("total").any())
+    anios = sorted(fin["anio"].unique())
+    prueba("F04: años seguidos, sin huecos", anios == list(range(anios[0], anios[-1] + 1)), f"{anios[0]} a {anios[-1]}")
+    # Los valores que no están vacíos deben ser positivos (ingresos y gastos no son negativos aquí).
+    con_cifra = fin["valor_rs"].dropna()
+    prueba("F04: los valores con cifra son positivos", (con_cifra > 0).all())
+
+
 def verificar_transporte():
     print("Transporte (F05, F29-F31, F35, F36)")
     cob = pd.read_csv(DATA / "derivados" / "cobertura_transporte_distrito.csv", dtype={"codigo_distrito": str})
@@ -435,6 +466,7 @@ def main():
     verificar_transporte()
     verificar_equipamientos()
     verificar_temperatura()
+    verificar_municipio()
     verificar_publico()
     for a in avisos:
         print(f"  aviso {a}")

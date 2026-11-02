@@ -3,6 +3,7 @@ dist/
 .venv/
 __pycache__/
 *.pyc
+.ruff_cache/
 .vercel/
 # Crudos: se regeneran con los scripts de ingesta (llevan fecha en el nombre).
 data/raw/*
