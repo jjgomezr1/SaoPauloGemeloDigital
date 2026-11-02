@@ -1,3 +1,5 @@
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
+
 const VACIOS = [
   {
     tema: "Turismo",
@@ -25,15 +27,14 @@ const VACIOS = [
 export default function NoCubrimos() {
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <h1>Lo que no cubrimos</h1>
+      <CabeceraSeccion seccion="no-cubrimos" titulo="Lo que no cubrimos">
         <p className="entrada">
           Esta app solo responde lo que su lago de datos sostiene. Esto es lo que queda por fuera de la versión 1.
         </p>
-      </header>
+      </CabeceraSeccion>
       <dl className="lista-vacios">
         {VACIOS.map((v) => (
-          <div key={v.tema}>
+          <div key={v.tema} className="estacion-cerrada">
             <dt>{v.tema}</dt>
             <dd>{v.detalle}</dd>
           </div>

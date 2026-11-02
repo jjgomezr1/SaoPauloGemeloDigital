@@ -10,7 +10,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
+import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
+import FranjasClima from "../componentes/FranjasClima";
+import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
 import RankingDistritos from "../componentes/RankingDistritos";
 import SelectorAnio from "../componentes/SelectorAnio";
@@ -40,6 +43,11 @@ const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "o
 
 /** Eje Y ajustado a los datos, en grados enteros: con el 0 por defecto, la línea quedaría aplastada arriba. */
 const dominioEnteros = ([min, max]: readonly [number, number]): [number, number] => [Math.floor(min), Math.ceil(max)];
+
+const CAPITULOS: Capitulo[] = [
+  { id: "ambiente-verde", titulo: "Vegetación" },
+  { id: "ambiente-temperatura", titulo: "Temperatura" },
+];
 
 export default function Ambiente() {
   const [datos, setDatos] = useState<Indicador[]>([]);
@@ -96,153 +104,177 @@ export default function Ambiente() {
 
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <h1>¿Cuánto verde tiene cada zona?</h1>
+      <CabeceraSeccion
+        seccion="ambiente"
+        titulo="¿Cuánto verde tiene la ciudad y qué tan frías son sus noches?"
+        visual={
+          <FranjasClima
+            serie={serieAnual}
+            normal={normalAnual?.valor ?? null}
+            periodoNormal={NORMAL}
+            seleccionado={anioTemp}
+            onSeleccionar={setAnioTemp}
+          />
+        }
+      >
         <p className="entrada">
           Cobertura vegetal de la Secretaría del Verde y Medio Ambiente por subprefeitura, con la población de cada año.
-          Haz clic en una subprefeitura para ver sus cifras.
+          Haz clic en una subprefeitura para ver sus cifras. Las franjas de al lado son la temperatura mínima de cada
+          año desde 1933: elige una para verla en detalle.
         </p>
-      </header>
+      </CabeceraSeccion>
 
-      <SelectorAnio etiqueta="Año del mapeo" anios={ANIOS} valor={anio} onCambiar={setAnio} />
+      <Estaciones capitulos={CAPITULOS} />
 
-      <div className="filtros">
-        <label>
-          Indicador
-          <select value={metrica} onChange={(e) => setMetrica(e.target.value)}>
-            {METRICAS.map((m) => (
-              <option key={m.clave} value={m.clave}>
-                {m.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
-        {subprefeitura && (
-          <button type="button" className="boton-secundario" onClick={() => setSubprefeitura(null)}>
-            Volver al municipio
-          </button>
-        )}
-      </div>
+      <SeccionCapitulo id="ambiente-verde">
+        <h2 className="titulo-capitulo">¿Cuánto verde tiene cada zona?</h2>
+        <SelectorAnio etiqueta="Año del mapeo" anios={ANIOS} valor={anio} onCambiar={setAnio} />
 
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador
-          titulo={`Vegetación por habitante en ${nombreTerritorio}`}
-          indicador={busca("cobertura_vegetal_por_hab")}
-          destacado
-        />
-        <TarjetaIndicador titulo="Superficie con vegetación" indicador={busca("cobertura_vegetal_km2")} />
-      </div>
+        <div className="filtros">
+          <label>
+            Indicador
+            <select value={metrica} onChange={(e) => setMetrica(e.target.value)}>
+              {METRICAS.map((m) => (
+                <option key={m.clave} value={m.clave}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+          {subprefeitura && (
+            <button type="button" className="boton-secundario" onClick={() => setSubprefeitura(null)}>
+              Volver al municipio
+            </button>
+          )}
+        </div>
 
-      <div className="rejilla-dos">
-        <div className="panel">
-          <h2>
-            {def.etiqueta} por subprefeitura, {anio}
-          </h2>
-          <MapaDistritos
-            nivel="subprefeitura"
-            valores={valores}
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador
+            titulo={`Vegetación por habitante en ${nombreTerritorio}`}
+            indicador={busca("cobertura_vegetal_por_hab")}
+            destacado
+          />
+          <TarjetaIndicador titulo="Superficie con vegetación" indicador={busca("cobertura_vegetal_km2")} />
+        </div>
+
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>
+              {def.etiqueta} por subprefeitura, {anio}
+            </h2>
+            <MapaDistritos
+              nivel="subprefeitura"
+              valores={valores}
+              unidad={unidad}
+              seleccionado={subprefeitura}
+              onSeleccionar={setSubprefeitura}
+            />
+          </div>
+          <RankingDistritos
+            titulo={`Las 10 subprefeituras con más ${def.etiqueta.toLowerCase()}`}
+            ranking={ranking}
             unidad={unidad}
             seleccionado={subprefeitura}
             onSeleccionar={setSubprefeitura}
+            columna="Subprefeitura"
           />
         </div>
-        <RankingDistritos
-          titulo={`Las 10 subprefeituras con más ${def.etiqueta.toLowerCase()}`}
-          ranking={ranking}
-          unidad={unidad}
-          seleccionado={subprefeitura}
-          onSeleccionar={setSubprefeitura}
-          columna="Subprefeitura"
-        />
-      </div>
 
-      <aside className="limitacion">
-        <strong>Antes de comparar años:</strong> 2010 se midió con imágenes del satélite SPOT, 2015 con RapidEye y 2020
-        con fotos aéreas de 2017-2018 apoyadas en LiDAR. Las diferencias entre años son sobre todo de método, por eso la
-        sección muestra un año a la vez.
-      </aside>
+        <aside className="limitacion">
+          <strong>Antes de comparar años:</strong> 2010 se midió con imágenes del satélite SPOT, 2015 con RapidEye y
+          2020 con fotos aéreas de 2017-2018 apoyadas en LiDAR. Las diferencias entre años son sobre todo de método, por
+          eso la sección muestra un año a la vez.
+        </aside>
+      </SeccionCapitulo>
 
-      <header className="seccion-cabecera">
-        <h2 className="subtitulo-seccion">¿Qué tan frías son las noches?</h2>
-        <p className="entrada">
-          Promedio mensual de las temperaturas mínimas del aire, de 1933 a 2025, que publica la Prefeitura con datos del
-          Instituto Astronômico e Geofísico de la USP. Se compara cada año con la normal {NORMAL}.
-        </p>
-      </header>
+      <SeccionCapitulo id="ambiente-temperatura">
+        <header className="seccion-cabecera">
+          <h2 className="subtitulo-seccion">¿Qué tan frías son las noches?</h2>
+          <p className="entrada">
+            Promedio mensual de las temperaturas mínimas del aire, de 1933 a 2025, que publica la Prefeitura con datos
+            del Instituto Astronômico e Geofísico de la USP. Se compara cada año con la normal {NORMAL}.
+          </p>
+        </header>
 
-      <SelectorAnio etiqueta="Año de la temperatura" anios={aniosTemp} valor={anioTemp} onCambiar={setAnioTemp} />
+        <SelectorAnio etiqueta="Año de la temperatura" anios={aniosTemp} valor={anioTemp} onCambiar={setAnioTemp} />
 
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador
-          titulo={`Temperatura mínima media de ${anioTemp ?? "…"}`}
-          indicador={anioTemp ? indiceTemp.get(`temp_min_anual|${anioTemp}`) : undefined}
-          destacado
-        />
-        <TarjetaIndicador titulo={`Normal ${NORMAL}`} indicador={normalAnual} />
-        <TarjetaIndicador
-          titulo="Diferencia con la normal"
-          indicador={anioTemp ? indiceTemp.get(`temp_min_anual_vs_normal|${anioTemp}`) : undefined}
-        />
-      </div>
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador
+            titulo={`Temperatura mínima media de ${anioTemp ?? "…"}`}
+            indicador={anioTemp ? indiceTemp.get(`temp_min_anual|${anioTemp}`) : undefined}
+            destacado
+          />
+          <TarjetaIndicador titulo={`Normal ${NORMAL}`} indicador={normalAnual} />
+          <TarjetaIndicador
+            titulo="Diferencia con la normal"
+            indicador={anioTemp ? indiceTemp.get(`temp_min_anual_vs_normal|${anioTemp}`) : undefined}
+          />
+        </div>
 
-      <div className="rejilla-dos">
-        <div className="panel">
-          <h2>
-            Temperatura mínima media anual, {serieAnual[0]?.anio}-{serieAnual.at(-1)?.anio}
-          </h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={serieAnual} margin={{ left: 8, right: 16, top: 8 }}>
-              <CartesianGrid vertical={false} stroke="var(--grilla)" />
-              <XAxis dataKey="anio" type="number" domain={["dataMin", "dataMax"]} {...EJE} />
-              <YAxis domain={dominioEnteros} width={56} unit=" °C" {...EJE} />
-              <Tooltip
-                formatter={(v) => [`${formatear(Number(v))} °C`, "Mínima media anual"]}
-                labelFormatter={(anio) => `Año ${anio}`}
-                {...ESTILO_TOOLTIP}
-              />
-              {normalAnual?.valor != null && (
-                <ReferenceLine
-                  y={normalAnual.valor}
-                  stroke="var(--texto-tenue)"
-                  strokeDasharray="5 4"
-                  label={{ value: `Normal ${NORMAL}`, position: "insideTopLeft", fill: "var(--texto-2)", fontSize: 12 }}
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>
+              Temperatura mínima media anual, {serieAnual[0]?.anio}-{serieAnual.at(-1)?.anio}
+            </h2>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={serieAnual} margin={{ left: 8, right: 16, top: 8 }}>
+                <CartesianGrid vertical={false} stroke="var(--grilla)" />
+                <XAxis dataKey="anio" type="number" domain={["dataMin", "dataMax"]} {...EJE} />
+                <YAxis domain={dominioEnteros} width={56} unit=" °C" {...EJE} />
+                <Tooltip
+                  formatter={(v) => [`${formatear(Number(v))} °C`, "Mínima media anual"]}
+                  labelFormatter={(anio) => `Año ${anio}`}
+                  {...ESTILO_TOOLTIP}
                 />
-              )}
-              {anioTemp && <ReferenceLine x={Number(anioTemp)} stroke="var(--acento)" strokeOpacity={0.6} />}
-              <Line dataKey="valor" stroke={SERIE_1} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+                {normalAnual?.valor != null && (
+                  <ReferenceLine
+                    y={normalAnual.valor}
+                    stroke="var(--texto-tenue)"
+                    strokeDasharray="5 4"
+                    label={{
+                      value: `Normal ${NORMAL}`,
+                      position: "insideTopLeft",
+                      fill: "var(--texto-2)",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
+                {anioTemp && <ReferenceLine x={Number(anioTemp)} stroke="var(--acento)" strokeOpacity={0.6} />}
+                <Line dataKey="valor" stroke={SERIE_1} strokeWidth={2.5} dot={false} {...ANIMACION} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="panel">
+            <h2>{anioTemp ?? "…"} mes a mes frente a la normal</h2>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={mensual} margin={{ left: 8, right: 16, top: 8 }}>
+                <CartesianGrid vertical={false} stroke="var(--grilla)" />
+                <XAxis dataKey="mes" {...EJE} />
+                <YAxis domain={dominioEnteros} width={56} unit=" °C" {...EJE} />
+                <Tooltip formatter={(v) => `${formatear(Number(v))} °C`} {...ESTILO_TOOLTIP} />
+                <Legend />
+                <Line name={`Año ${anioTemp ?? ""}`} dataKey="anio" stroke={SERIE_1} strokeWidth={2} dot={{ r: 3 }} />
+                <Line
+                  name={`Normal ${NORMAL}`}
+                  dataKey="normal"
+                  stroke="var(--texto-tenue)"
+                  strokeWidth={2}
+                  strokeDasharray="5 4"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="panel">
-          <h2>{anioTemp ?? "…"} mes a mes frente a la normal</h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={mensual} margin={{ left: 8, right: 16, top: 8 }}>
-              <CartesianGrid vertical={false} stroke="var(--grilla)" />
-              <XAxis dataKey="mes" {...EJE} />
-              <YAxis domain={dominioEnteros} width={56} unit=" °C" {...EJE} />
-              <Tooltip formatter={(v) => `${formatear(Number(v))} °C`} {...ESTILO_TOOLTIP} />
-              <Legend />
-              <Line name={`Año ${anioTemp ?? ""}`} dataKey="anio" stroke={SERIE_1} strokeWidth={2} dot={{ r: 3 }} />
-              <Line
-                name={`Normal ${NORMAL}`}
-                dataKey="normal"
-                stroke="var(--texto-tenue)"
-                strokeWidth={2}
-                strokeDasharray="5 4"
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <aside className="limitacion">
-        <strong>Una cifra para toda la ciudad:</strong> la temperatura no se mide por lugar, barrio ni zona, así que no
-        hay mapa de temperatura. Es una cifra general para São Paulo, medida en una estación meteorológica. Las normales
-        y los promedios anuales se calculan de los doce meses de cada año. En 2025 los meses vienen redondeados a un
-        decimal.
-      </aside>
+        <aside className="limitacion">
+          <strong>Una cifra para toda la ciudad:</strong> la temperatura no se mide por lugar, barrio ni zona, así que
+          no hay mapa de temperatura. Es una cifra general para São Paulo, medida en una estación meteorológica. Las
+          normales y los promedios anuales se calculan de los doce meses de cada año. En 2025 los meses vienen
+          redondeados a un decimal.
+        </aside>
+      </SeccionCapitulo>
     </section>
   );
 }

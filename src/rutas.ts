@@ -61,13 +61,6 @@ export const SECCIONES: Seccion[] = [
     lista: true,
   },
   {
-    id: "atlas",
-    titulo: "Atlas y correlaciones",
-    resumen: "Índice por distrito con pesos ajustables y correlaciones en dos escalas.",
-    fuentes: [],
-    lista: false,
-  },
-  {
     id: "fuentes",
     titulo: "Fuentes y método",
     resumen: "Catálogo y diccionario generados desde el Excel.",

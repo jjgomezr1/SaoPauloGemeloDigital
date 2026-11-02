@@ -4,6 +4,8 @@
  * - La cabecera es una banda oscura de señalización, igual en los dos temas.
  * - Color con significado: azul de la línea 1 como acento (P1) y amarillo de la línea 4 solo para P2.
  * - Una familia, Archivo: ancha en títulos y condensada en rótulos, como la señalética.
+ * - Cada sección viaja en una línea del Metrô (src/lineas.ts): su color tiñe la placa de la cabecera, el
+ *   índice de capítulos, los gráficos y la rampa del mapa. Variables en «Líneas por sección», más abajo.
  */
 
 :root {
@@ -437,7 +439,7 @@ input {
   overflow-wrap: anywhere;
 }
 .cifra-destacada {
-  color: var(--acento);
+  color: var(--seccion-texto);
 }
 .unidad {
   font-size: 1rem;
@@ -606,7 +608,7 @@ input {
   width: 100%;
   min-height: 32px;
   margin: 0;
-  accent-color: var(--acento);
+  accent-color: var(--serie-seccion);
   cursor: pointer;
 }
 .selector-anio input[type="range"]:disabled {
@@ -1077,5 +1079,1076 @@ code {
     width: auto;
     margin-top: 12px;
     box-shadow: none;
+  }
+}
+
+/* ===================================================================================================
+ * Líneas por sección
+ * Cada sección define el color de su línea del Metrô y sus variantes legibles en cada tema:
+ * --linea-color   color oficial (círculos, franjas)       --sobre-linea   texto sobre ese color
+ * --serie-seccion series de gráficos (≥3:1 con el fondo)   --sobre-serie   texto sobre una barra
+ * --seccion-texto cifras y rótulos (≥4.5:1 con el fondo)
+ * =================================================================================================== */
+:root {
+  --linea-color: var(--linea-1);
+  --sobre-linea: #ffffff;
+  --serie-seccion: var(--serie-1);
+  --sobre-serie: #ffffff;
+  --seccion-texto: var(--acento);
+  --anillo-1: #0455a1;
+  --anillo-2: #3987e5;
+  --anillo-3: #86b6ef;
+  --deficit: #c4473b;
+  --alto-cabecera: 60px;
+  --facil: cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+:root[data-tema="oscuro"] {
+  --anillo-1: #7db3ee;
+  --anillo-2: #3987e5;
+  --anillo-3: #1c5cab;
+  --deficit: #ef7d70;
+}
+:root[data-linea="empleo"] {
+  --linea-color: var(--linea-4);
+  --sobre-linea: #1f2428;
+  --serie-seccion: #b88a00;
+  --sobre-serie: #1f2428;
+  --seccion-texto: #7a5b00;
+}
+:root[data-tema="oscuro"][data-linea="empleo"] {
+  --serie-seccion: #f2c200;
+  --seccion-texto: #fed304;
+}
+:root[data-linea="gente"] {
+  --linea-color: #ee372f;
+  --serie-seccion: #d63a2f;
+  --seccion-texto: #b0261b;
+}
+:root[data-tema="oscuro"][data-linea="gente"] {
+  --serie-seccion: #f0675e;
+  --sobre-serie: #1f2428;
+  --seccion-texto: #ff8f86;
+}
+:root[data-linea="ambiente"] {
+  --linea-color: #007e5e;
+  --serie-seccion: #0e8a5f;
+  --seccion-texto: #00704f;
+}
+:root[data-tema="oscuro"][data-linea="ambiente"] {
+  --serie-seccion: #34c08a;
+  --sobre-serie: #0c1f17;
+  --seccion-texto: #62d6a5;
+}
+:root[data-linea="municipio"] {
+  --linea-color: #9b3894;
+  --serie-seccion: #9b3894;
+  --seccion-texto: #85307f;
+}
+:root[data-tema="oscuro"][data-linea="municipio"] {
+  --serie-seccion: #cf8ac9;
+  --sobre-serie: #1f2428;
+  --seccion-texto: #e3a8de;
+}
+:root:is([data-linea="fuentes"], [data-linea="no-cubrimos"]) {
+  --linea-color: #9ea0a4;
+  --sobre-linea: #1f2428;
+  --serie-seccion: #6f7378;
+  --seccion-texto: var(--texto-2);
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* --- Navegación: cada enlace lleva el punto de su línea --- */
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.nav-linea {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-linea);
+  opacity: 0.7;
+  /* Un anillo claro para que las líneas oscuras (azul, lilás) se vean sobre la banda. */
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18);
+  transition:
+    opacity 0.2s,
+    box-shadow 0.2s;
+}
+.nav a:hover .nav-linea,
+.nav a.activa .nav-linea {
+  opacity: 1;
+}
+.nav a.activa .nav-linea {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-linea) 35%, transparent);
+}
+/* La banda de la cabecera remata con una línea fina del color de la sección abierta. */
+.cabecera {
+  box-shadow: inset 0 -3px 0 var(--linea-color);
+  transition: box-shadow 0.4s;
+}
+
+/* --- Placa de sección: la cabecera de cada sección como placa de estación --- */
+.placa {
+  position: relative;
+  display: grid;
+  gap: clamp(20px, 3vw, 40px);
+  align-items: center;
+  padding: clamp(24px, 3.4vw, 40px) clamp(20px, 3.4vw, 40px) clamp(24px, 3.4vw, 40px) clamp(28px, 4vw, 48px);
+  border-radius: 14px;
+  background: var(--superficie);
+  overflow: hidden;
+}
+/* La franja de la línea, a la izquierda, como en las placas de andén. */
+.placa::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8px;
+  background: var(--linea-color);
+}
+/* Un halo muy tenue del color de la línea, desde la esquina: da profundidad sin bordes ni sombras. */
+.placa::after {
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 60%;
+  aspect-ratio: 1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--linea-color) 14%, transparent), transparent);
+  pointer-events: none;
+}
+.placa.con-visual {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+}
+.placa-texto {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 720px;
+}
+.placa-visual {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.placa-rotulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  font-stretch: 85%;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+.placa-circulo {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--linea-color);
+  color: var(--sobre-linea);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.placa-pregunta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--borde);
+}
+.placa-pregunta .codigo-pregunta {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.placa h1 {
+  font-size: clamp(1.9rem, 4.2vw, 3rem);
+  font-weight: 760;
+  font-stretch: 115%;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+}
+
+/* --- Índice de capítulos: el diagrama de una línea --- */
+.estaciones {
+  position: sticky;
+  top: var(--alto-cabecera);
+  z-index: 15;
+  margin: -8px calc(-1 * clamp(8px, 2vw, 24px)) 0;
+  padding: 12px clamp(8px, 2vw, 24px) 10px;
+  background: color-mix(in srgb, var(--fondo) 78%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  border-bottom: 1px solid color-mix(in srgb, var(--borde) 55%, transparent);
+}
+.estaciones ol {
+  --punto: 16px;
+  position: relative;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* La vía: gris de punta a punta; encima, el tramo recorrido en el color de la línea. */
+.estaciones ol::before,
+.estaciones ol::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--punto) / 2 - 2px);
+  left: calc(50% / var(--n, 1));
+  height: 4px;
+  border-radius: 2px;
+}
+.estaciones ol::before {
+  right: calc(50% / var(--n, 1));
+  background: var(--borde);
+}
+.estaciones ol::after {
+  width: calc((100% - 100% / var(--n, 1)) * var(--avance, 0));
+  background: var(--linea-color);
+  transition: width 0.5s var(--facil);
+}
+.estaciones li {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+}
+.estaciones button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--texto-tenue);
+}
+.estacion-punto {
+  width: var(--punto);
+  height: var(--punto);
+  border-radius: 50%;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 3px var(--borde);
+  transition:
+    box-shadow 0.3s,
+    transform 0.3s var(--facil),
+    background-color 0.3s;
+}
+.estacion-nombre {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-stretch: 88%;
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+.estaciones .pasada .estacion-punto {
+  box-shadow: inset 0 0 0 3px var(--linea-color);
+}
+.estaciones .actual .estacion-punto {
+  background: var(--superficie);
+  box-shadow:
+    inset 0 0 0 4px var(--linea-color),
+    0 0 0 5px color-mix(in srgb, var(--linea-color) 22%, transparent);
+  transform: scale(1.2);
+}
+.estaciones .actual .estacion-nombre,
+.estaciones button:hover .estacion-nombre {
+  color: var(--texto);
+}
+.estaciones button:hover .estacion-punto {
+  transform: scale(1.15);
+}
+
+.capitulo {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  scroll-margin-top: calc(var(--alto-cabecera) + 72px);
+}
+.capitulo:focus {
+  outline: none;
+}
+.capitulo + .capitulo {
+  margin-top: 32px;
+}
+/* El título de capítulo con su estación: círculo hueco del color de la línea. */
+.titulo-capitulo,
+.capitulo .subtitulo-seccion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: clamp(1.35rem, 2.6vw, 1.7rem);
+  font-weight: 720;
+  font-stretch: 112%;
+  letter-spacing: -0.015em;
+}
+.titulo-capitulo::before,
+.capitulo .subtitulo-seccion::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 4px var(--linea-color);
+}
+.capitulo .seccion-cabecera .subtitulo-seccion {
+  margin-bottom: 0;
+}
+
+/* --- Tarjetas --- */
+.tarjeta {
+  transition:
+    transform 0.25s var(--facil),
+    background-color 0.2s;
+}
+.tarjeta-destacada {
+  position: relative;
+  overflow: hidden;
+}
+.tarjeta-destacada::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--linea-color);
+}
+
+/* --- Portada: preguntas con la franja de su línea y el diagrama de red --- */
+.pregunta {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color 0.15s,
+    transform 0.25s var(--facil);
+}
+.pregunta::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s var(--facil);
+}
+.pregunta-p1::after {
+  background: var(--linea-1);
+}
+.pregunta-p2::after {
+  background: var(--linea-4);
+}
+.pregunta:hover::after,
+.pregunta:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.red {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.red-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: var(--fuente);
+}
+.ramal {
+  text-decoration: none;
+  transition: opacity 0.25s;
+}
+.red-svg:has(.ramal:hover) .ramal:not(:hover) {
+  opacity: 0.28;
+}
+.ramal-trazo {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ramal-toque {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 34;
+}
+.ramal-terminal {
+  fill: var(--superficie);
+  stroke-width: 5;
+  transition: r 0.25s var(--facil);
+}
+.ramal:hover .ramal-terminal,
+.ramal:focus-visible .ramal-terminal {
+  r: 14;
+}
+.ramal:focus-visible {
+  outline: none;
+}
+.ramal:focus-visible .ramal-nombre {
+  text-decoration: underline;
+}
+.ramal-nombre {
+  fill: var(--texto);
+  font-size: 17px;
+  font-weight: 700;
+  font-stretch: 105%;
+}
+.ramal-detalle {
+  fill: var(--texto-tenue);
+  font-size: 13px;
+  font-stretch: 92%;
+}
+.red-se-fondo {
+  fill: var(--texto);
+}
+.red-se-centro {
+  fill: var(--superficie);
+}
+.red-se-pulso {
+  fill: var(--texto);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.red-lista {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.red-lista li {
+  border-left: 5px solid var(--color-linea);
+}
+.red-lista li + li {
+  margin-top: 6px;
+}
+.red-lista a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--texto);
+  text-decoration: none;
+}
+.red-lista-circulo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-linea);
+  color: var(--sobre-color-linea);
+  font-size: 12px;
+  font-weight: 800;
+}
+.red-lista-detalle {
+  display: block;
+  font-size: 13px;
+  color: var(--texto-tenue);
+}
+
+/* --- Concentración del empleo (Empleo) --- */
+.concentracion {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.concentracion-cifra,
+.balance-cifra,
+.crecimiento-cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.concentracion-numero,
+.balance-numero,
+.crecimiento-numero {
+  font-size: clamp(2.6rem, 5vw, 3.6rem);
+  font-weight: 780;
+  font-stretch: 118%;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--seccion-texto);
+}
+.concentracion-texto,
+.balance-texto,
+.crecimiento-texto {
+  max-width: 34ch;
+  font-size: 15px;
+  color: var(--texto-2);
+}
+.concentracion-rejilla {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 4px;
+}
+.casilla {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--texto-tenue) calc(var(--peso) * 55% + 8%), var(--superficie-2));
+  transition:
+    transform 0.2s var(--facil),
+    box-shadow 0.2s;
+}
+.casilla.primeros {
+  background: color-mix(in srgb, var(--linea-color) calc(var(--peso) * 60% + 40%), var(--superficie));
+}
+.casilla:hover {
+  transform: scale(1.25);
+  z-index: 1;
+}
+.casilla.seleccionada {
+  box-shadow: 0 0 0 2px var(--texto);
+}
+
+/* --- Anillos de cobertura (Transporte) --- */
+.anillos {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 32px);
+  margin: 0;
+}
+.anillos-svg {
+  flex: none;
+  width: clamp(150px, 18vw, 210px);
+  height: auto;
+}
+.anillo-pista {
+  fill: none;
+  stroke: var(--superficie-2);
+}
+.anillo-valor {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.1s var(--facil);
+}
+.anillo-1 .anillo-valor {
+  stroke: var(--anillo-1);
+}
+.anillo-2 .anillo-valor {
+  stroke: var(--anillo-2);
+}
+.anillo-3 .anillo-valor {
+  stroke: var(--anillo-3);
+}
+.anillos figcaption {
+  min-width: 0;
+}
+.anillos-territorio {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 650;
+  font-stretch: 88%;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+.anillos ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.anillos li {
+  display: flex;
+  flex-direction: column;
+  padding-left: 12px;
+  border-left: 4px solid;
+}
+.anillos li.anillo-1 {
+  border-color: var(--anillo-1);
+}
+.anillos li.anillo-2 {
+  border-color: var(--anillo-2);
+}
+.anillos li.anillo-3 {
+  border-color: var(--anillo-3);
+}
+.anillos-cifra {
+  font-size: 1.6rem;
+  font-weight: 760;
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.anillos-etiqueta {
+  font-size: 13px;
+  color: var(--texto-2);
+}
+
+/* --- Crecimiento de la población (Gente) --- */
+.crecimiento {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.crecimiento-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.crecimiento-linea {
+  fill: none;
+  stroke: var(--serie-seccion);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.crecimiento-punto {
+  fill: var(--superficie);
+  stroke: var(--serie-seccion);
+  stroke-width: 2;
+}
+.crecimiento-eje {
+  fill: var(--texto-tenue);
+  font-family: var(--fuente);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Franjas de temperatura (Ambiente) --- */
+.franjas {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.franjas-cabecera {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.franjas-anio {
+  margin: 0;
+  font-size: clamp(2.6rem, 5vw, 3.6rem);
+  font-weight: 780;
+  font-stretch: 118%;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.franjas-dato {
+  margin: 0;
+  font-size: 15px;
+  color: var(--texto-2);
+}
+.franjas-dato strong {
+  color: var(--texto);
+}
+.franjas-dato .calido {
+  color: var(--deficit);
+  font-weight: 650;
+}
+.franjas-dato .frio {
+  color: var(--anillo-1);
+  font-weight: 650;
+}
+.franjas-banda {
+  display: flex;
+  height: clamp(120px, 16vw, 170px);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.franja {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  transition:
+    transform 0.2s var(--facil),
+    filter 0.2s;
+}
+.franja:hover,
+.franja:focus-visible {
+  transform: scaleY(1.06);
+  filter: brightness(1.12);
+  outline: none;
+}
+.franja.activa {
+  box-shadow:
+    inset 2px 0 0 var(--superficie),
+    inset -2px 0 0 var(--superficie);
+  transform: scaleY(1.06);
+}
+.franjas-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+.franjas-escala {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.franjas-degradado {
+  width: 72px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #08519c, #9ecae1, #fcbba1, #cb181d);
+}
+.cargando-franjas {
+  height: 220px;
+  border-radius: 10px;
+  background: var(--superficie-2);
+}
+
+/* --- Balance de las finanzas (Municipio) --- */
+.balance {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.balance-barras {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+  height: 170px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* La línea de cero. */
+.balance-barras::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1px;
+  background: var(--borde);
+}
+.balance-barras li {
+  position: relative;
+}
+.balance-barra {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: var(--alto);
+  border-radius: 4px;
+}
+.superavit .balance-barra {
+  bottom: 50%;
+  background: var(--serie-seccion);
+}
+.deficit .balance-barra {
+  top: 50%;
+  background: var(--deficit);
+}
+.balance-anio {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+.superavit .balance-anio {
+  top: calc(50% + 4px);
+}
+.deficit .balance-anio {
+  bottom: calc(50% + 4px);
+}
+.balance-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 12px;
+  color: var(--texto-2);
+}
+.balance-leyenda > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.muestra.superavit {
+  background: var(--serie-seccion);
+}
+.muestra.deficit {
+  background: var(--deficit);
+}
+
+/* --- Barra de composición (Empleo, Municipio) --- */
+.composicion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.composicion-barra {
+  display: flex;
+  gap: 3px;
+  height: 44px;
+}
+.composicion-barra span {
+  min-width: 3px;
+  flex-basis: 0;
+  border-radius: 6px;
+  transition: filter 0.2s;
+}
+.composicion-barra span:hover {
+  filter: brightness(1.15) saturate(1.1);
+}
+.composicion-leyenda {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.composicion-leyenda li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--grilla);
+}
+.composicion-etiqueta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--texto-2);
+}
+.composicion-pct {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.composicion-valor {
+  grid-column: 2 / -1;
+  font-size: 12px;
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Tabla de calor (Municipio) y desplegables --- */
+.celda-calor {
+  background: color-mix(in srgb, var(--serie-seccion) var(--calor, 0%), transparent);
+}
+.desplegable summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.desplegable summary::-webkit-details-marker {
+  display: none;
+}
+.desplegable summary::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--texto-2);
+  border-bottom: 2px solid var(--texto-2);
+  transform: rotate(-45deg);
+  transition: transform 0.2s;
+}
+.desplegable[open] summary::before {
+  transform: rotate(45deg);
+}
+
+/* --- Lo que no cubrimos: estaciones cerradas --- */
+.lista-vacios .estacion-cerrada {
+  position: relative;
+  padding-left: 52px;
+}
+.estacion-cerrada::before {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 20px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px dashed var(--linea-color);
+}
+
+/* --- Movimiento ---
+ * Entrada de la sección al navegar, y paneles que aparecen al entrar en pantalla (componentes/useRevelar.ts
+ * pone «por-revelar» y «visto»). Nada se mueve con «reducir movimiento». */
+@media (prefers-reduced-motion: no-preference) {
+  .entrada-seccion {
+    animation: entrar 0.55s var(--facil) both;
+  }
+  .placa-visual {
+    animation: entrar 0.8s 0.12s var(--facil) both;
+  }
+  .por-revelar {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+    transition:
+      opacity 0.7s var(--facil),
+      transform 0.8s var(--facil);
+  }
+  .por-revelar.visto {
+    opacity: 1;
+    transform: none;
+  }
+  .ramal-trazo {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: trazar 1.1s calc(0.2s + var(--i) * 0.09s) var(--facil) forwards;
+  }
+  .ramal-terminal,
+  .ramal text {
+    opacity: 0;
+    animation: aparecer-quieto 0.5s calc(0.8s + var(--i) * 0.09s) ease-out forwards;
+  }
+  .red-se-pulso {
+    animation: pulso 2.4s 1.6s ease-out infinite;
+  }
+  .crecimiento-linea {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: trazar 1.6s 0.3s var(--facil) forwards;
+  }
+  .composicion-barra span {
+    animation: crecer-x 0.8s var(--facil) both;
+    transform-origin: left;
+  }
+  .balance-barra {
+    animation: crecer-y 0.7s calc(0.15s + var(--i) * 0.05s) var(--facil) both;
+  }
+  .superavit .balance-barra {
+    transform-origin: bottom;
+  }
+  .deficit .balance-barra {
+    transform-origin: top;
+  }
+  .casilla {
+    animation: aparecer-quieto 0.4s calc(var(--n) * 8ms) ease-out both;
+  }
+  .franja {
+    animation: crecer-y 0.6s ease-out both;
+  }
+  .tarjeta:hover,
+  .pregunta:hover {
+    transform: translateY(-2px);
+  }
+}
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes aparecer-quieto {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pulso {
+  from {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+@keyframes trazar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes crecer-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes crecer-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* --- Móvil (complementos) --- */
+@media (max-width: 860px) {
+  :root {
+    --alto-cabecera: 56px;
+  }
+  .placa.con-visual {
+    grid-template-columns: 1fr;
+  }
+  .estaciones {
+    margin-inline: -16px;
+    padding-inline: 8px;
+  }
+  .estacion-nombre {
+    font-size: 11px;
+  }
+  .rejilla-pareja {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .red-svg {
+    display: none;
+  }
+  .red-lista {
+    display: block;
+  }
+  .anillos {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .concentracion-rejilla {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 }

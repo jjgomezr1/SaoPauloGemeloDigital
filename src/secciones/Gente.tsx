@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
+import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
+import Crecimiento from "../componentes/Crecimiento";
+import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
+import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
 import RankingDistritos from "../componentes/RankingDistritos";
 import SelectorAnio from "../componentes/SelectorAnio";
@@ -53,6 +56,13 @@ const METRICAS_NACIMIENTOS = [
   { clave: "nacidos_vivos", etiqueta: "Nacimientos" },
 ] as const;
 
+const CAPITULOS: Capitulo[] = [
+  { id: "gente-donde", titulo: "Dónde vive" },
+  { id: "gente-crecimiento", titulo: "Crecimiento" },
+  { id: "gente-desarrollo", titulo: "Desarrollo" },
+  { id: "gente-nacimientos", titulo: "Nacimientos" },
+];
+
 export default function Gente() {
   const [datos, setDatos] = useState<Indicador[]>([]);
   const [area, setArea] = useState<Indicador[]>([]);
@@ -103,6 +113,15 @@ export default function Gente() {
     [historia, territorioHistoria],
   );
   const serieHistoria = censos.map((i) => ({ anio: Number(i.vigencia), valor: i.valor }));
+  // La cifra de la cabecera es siempre la de la ciudad, sea cual sea el territorio elegido abajo.
+  const historiaCiudad = useMemo(
+    () =>
+      historia
+        .filter((i) => i.nivel === "municipio")
+        .map((i) => ({ anio: Number(i.vigencia), valor: i.valor }))
+        .sort((a, b) => a.anio - b.anio),
+    [historia],
+  );
 
   // IDHM: un año a la vez, por subprefeitura (la fuente las llama Prefeituras Regionais).
   const idhDelAnio = useMemo(() => idh.filter((i) => i.vigencia === anioIdh), [idh, anioIdh]);
@@ -123,258 +142,281 @@ export default function Gente() {
 
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <h1>¿Dónde vive la gente?</h1>
+      <CabeceraSeccion seccion="gente" titulo="¿Dónde vive la gente?" visual={<Crecimiento serie={historiaCiudad} />}>
         <p className="entrada">
           Población y densidad del censo 2022, las favelas que delimita la Secretaría de Vivienda (HABITASAMPA), la
           población desde 1872, el IDH municipal de 2000 y 2010 y los nacimientos de 2023 a 2025. En el mapa 3D cada
           favela muestra su nombre, pero no su calle.
         </p>
-      </header>
+      </CabeceraSeccion>
 
-      <div className="filtros">
-        <label>
-          Indicador
-          <select value={metrica} onChange={(e) => setMetrica(e.target.value)}>
-            {METRICAS.map((m) => (
-              <option key={m.clave} value={m.clave}>
-                {m.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
-        {distrito && (
-          <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
-            Volver al municipio
-          </button>
-        )}
-      </div>
+      <Estaciones capitulos={CAPITULOS} />
 
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador titulo={`Población en ${nombreTerritorio}`} indicador={busca("poblacion")} destacado />
-        <TarjetaIndicador titulo="Densidad" indicador={busca("densidad")} />
-        <TarjetaIndicador titulo="Domicilios en favelas" indicador={busca("domicilios_favela_pct")} />
-        <TarjetaIndicador titulo="Favelas" indicador={busca("favelas")} />
-      </div>
-
-      <div className="rejilla-dos">
-        <div className="panel">
-          <h2>{def.etiqueta} por distrito</h2>
-          <MapaDistritos valores={valores} unidad={unidad} seleccionado={distrito} onSeleccionar={setDistrito} />
+      <SeccionCapitulo id="gente-donde">
+        <div className="filtros">
+          <label>
+            Indicador
+            <select value={metrica} onChange={(e) => setMetrica(e.target.value)}>
+              {METRICAS.map((m) => (
+                <option key={m.clave} value={m.clave}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+          {distrito && (
+            <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
+              Volver al municipio
+            </button>
+          )}
         </div>
-        <RankingDistritos
-          titulo={`Los 10 distritos con más ${def.etiqueta.toLowerCase()}`}
-          ranking={ranking}
-          unidad={unidad}
-          seleccionado={distrito}
-          onSeleccionar={setDistrito}
-        />
-      </div>
 
-      <div className="panel">
-        <h2>
-          Área construida residencial de la ciudad, {serieArea[0]?.anio}-{serieArea.at(-1)?.anio}
-        </h2>
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={serieArea} margin={{ left: 8, right: 16, top: 8 }}>
-            <CartesianGrid vertical={false} stroke="var(--grilla)" />
-            <XAxis dataKey="anio" {...EJE} />
-            <YAxis tickFormatter={formatearCorto} width={60} unit=" km²" {...EJE} />
-            <Tooltip formatter={(v) => [`${formatear(Number(v))} km²`, "Área residencial"]} {...ESTILO_TOOLTIP} />
-            <Line dataKey="valor" stroke={SERIE_1} strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-        <p className="nota">
-          Fuente F28 (catastro del IPTU, Infocidade). Superficie construida de uso residencial registrada en enero de
-          cada año, para toda la ciudad: la fuente no la abre por distrito.
-        </p>
-      </div>
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador titulo={`Población en ${nombreTerritorio}`} indicador={busca("poblacion")} destacado />
+          <TarjetaIndicador titulo="Densidad" indicador={busca("densidad")} />
+          <TarjetaIndicador titulo="Domicilios en favelas" indicador={busca("domicilios_favela_pct")} />
+          <TarjetaIndicador titulo="Favelas" indicador={busca("favelas")} />
+        </div>
 
-      <header className="seccion-cabecera">
-        <h2 className="subtitulo-seccion">¿Cuánto ha crecido la población?</h2>
-        <p className="entrada">
-          Población de cada censo desde 1872, que reúne la Prefeitura con datos del IBGE, para la ciudad, la Región
-          Metropolitana, el Estado y Brasil.
-        </p>
-      </header>
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>{def.etiqueta} por distrito</h2>
+            <MapaDistritos valores={valores} unidad={unidad} seleccionado={distrito} onSeleccionar={setDistrito} />
+          </div>
+          <RankingDistritos
+            titulo={`Los 10 distritos con más ${def.etiqueta.toLowerCase()}`}
+            ranking={ranking}
+            unidad={unidad}
+            seleccionado={distrito}
+            onSeleccionar={setDistrito}
+          />
+        </div>
 
-      <div className="filtros">
-        <label>
-          Territorio
-          <select value={territorioHistoria.nivel} onChange={(e) => setHistoriaTerritorio(e.target.value)}>
-            {TERRITORIOS_HISTORIA.map((t) => (
-              <option key={t.nivel} value={t.nivel}>
-                {t.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador
-          titulo={`Último censo (${censos.at(-1)?.vigencia ?? "…"})`}
-          indicador={censos.at(-1)}
-          destacado
-        />
-        <TarjetaIndicador titulo={`Primer censo con dato (${censos[0]?.vigencia ?? "…"})`} indicador={censos[0]} />
-      </div>
-
-      <div className="panel">
-        <h2>Población de {territorioHistoria.etiqueta} en cada censo</h2>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={serieHistoria} margin={{ left: 8, right: 16, top: 8 }}>
-            <CartesianGrid vertical={false} stroke="var(--grilla)" />
-            <XAxis dataKey="anio" type="number" domain={["dataMin", "dataMax"]} {...EJE} />
-            <YAxis tickFormatter={formatearCorto} width={64} {...EJE} />
-            <Tooltip
-              formatter={(v) => [`${formatear(Number(v))} personas`, "Población"]}
-              labelFormatter={(anio) => `Censo de ${anio}`}
-              {...ESTILO_TOOLTIP}
-            />
-            <Line dataKey="valor" stroke={SERIE_1} strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-        <p className="nota">
-          Fuente F01 (censos del IBGE, Infocidade). Cada punto es un censo: no hay cifras de los años intermedios.
-        </p>
-      </div>
-
-      <header className="seccion-cabecera">
-        <h2 className="subtitulo-seccion">¿Qué tan desarrollada está cada zona?</h2>
-        <p className="entrada">
-          Índice de Desarrollo Humano Municipal (IDHM) de cada subprefeitura, con la dimensión de ingreso. Haz clic en
-          una subprefeitura para ver sus cifras.
-        </p>
-      </header>
-
-      <SelectorAnio etiqueta="Año del censo" anios={ANIOS_IDH} valor={anioIdh} onCambiar={setAnioIdh} />
-
-      <div className="filtros">
-        <label>
-          Indicador
-          <select value={defIdh.clave} onChange={(e) => setMetricaIdh(e.target.value)}>
-            {METRICAS_IDH.map((m) => (
-              <option key={m.clave} value={m.clave}>
-                {m.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
-        {subprefeitura && (
-          <button type="button" className="boton-secundario" onClick={() => setSubprefeitura(null)}>
-            Volver al municipio
-          </button>
-        )}
-      </div>
-
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador titulo={`IDHM en ${nombreIdh}`} indicador={buscaIdh("idhm")} destacado />
-        <TarjetaIndicador titulo="IDHM Renda" indicador={buscaIdh("idhm_renda")} />
-      </div>
-
-      <div className="rejilla-dos">
         <div className="panel">
           <h2>
-            {defIdh.etiqueta} por subprefeitura, {anioIdh}
+            Área construida residencial de la ciudad, {serieArea[0]?.anio}-{serieArea.at(-1)?.anio}
           </h2>
-          <MapaDistritos
-            nivel="subprefeitura"
-            valores={idhMapa.valores}
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={serieArea} margin={{ left: 8, right: 16, top: 8 }}>
+              <CartesianGrid vertical={false} stroke="var(--grilla)" />
+              <XAxis dataKey="anio" {...EJE} />
+              <YAxis tickFormatter={formatearCorto} width={60} unit=" km²" {...EJE} />
+              <Tooltip formatter={(v) => [`${formatear(Number(v))} km²`, "Área residencial"]} {...ESTILO_TOOLTIP} />
+              <Line dataKey="valor" stroke={SERIE_1} strokeWidth={2.5} dot={false} {...ANIMACION} />
+            </LineChart>
+          </ResponsiveContainer>
+          <p className="nota">
+            Fuente F28 (catastro del IPTU, Infocidade). Superficie construida de uso residencial registrada en enero de
+            cada año, para toda la ciudad: la fuente no la abre por distrito.
+          </p>
+        </div>
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="gente-crecimiento">
+        <header className="seccion-cabecera">
+          <h2 className="subtitulo-seccion">¿Cuánto ha crecido la población?</h2>
+          <p className="entrada">
+            Población de cada censo desde 1872, que reúne la Prefeitura con datos del IBGE, para la ciudad, la Región
+            Metropolitana, el Estado y Brasil.
+          </p>
+        </header>
+
+        <div className="filtros">
+          <label>
+            Territorio
+            <select value={territorioHistoria.nivel} onChange={(e) => setHistoriaTerritorio(e.target.value)}>
+              {TERRITORIOS_HISTORIA.map((t) => (
+                <option key={t.nivel} value={t.nivel}>
+                  {t.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador
+            titulo={`Último censo (${censos.at(-1)?.vigencia ?? "…"})`}
+            indicador={censos.at(-1)}
+            destacado
+          />
+          <TarjetaIndicador titulo={`Primer censo con dato (${censos[0]?.vigencia ?? "…"})`} indicador={censos[0]} />
+        </div>
+
+        <div className="panel">
+          <h2>Población de {territorioHistoria.etiqueta} en cada censo</h2>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={serieHistoria} margin={{ left: 8, right: 16, top: 8 }}>
+              <defs>
+                <linearGradient id="historia-relleno" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={SERIE_1} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={SERIE_1} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="var(--grilla)" />
+              <XAxis dataKey="anio" type="number" domain={["dataMin", "dataMax"]} {...EJE} />
+              <YAxis tickFormatter={formatearCorto} width={64} {...EJE} />
+              <Tooltip
+                formatter={(v) => [`${formatear(Number(v))} personas`, "Población"]}
+                labelFormatter={(anio) => `Censo de ${anio}`}
+                {...ESTILO_TOOLTIP}
+              />
+              <Area
+                dataKey="valor"
+                stroke={SERIE_1}
+                strokeWidth={2.5}
+                fill="url(#historia-relleno)"
+                dot={{ r: 3.5, fill: SERIE_1, strokeWidth: 2, stroke: "var(--superficie)" }}
+                activeDot={{ r: 6, strokeWidth: 3, stroke: "var(--superficie)" }}
+                {...ANIMACION}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+          <p className="nota">
+            Fuente F01 (censos del IBGE, Infocidade). Cada punto es un censo: no hay cifras de los años intermedios.
+          </p>
+        </div>
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="gente-desarrollo">
+        <header className="seccion-cabecera">
+          <h2 className="subtitulo-seccion">¿Qué tan desarrollada está cada zona?</h2>
+          <p className="entrada">
+            Índice de Desarrollo Humano Municipal (IDHM) de cada subprefeitura, con la dimensión de ingreso. Haz clic en
+            una subprefeitura para ver sus cifras.
+          </p>
+        </header>
+
+        <SelectorAnio etiqueta="Año del censo" anios={ANIOS_IDH} valor={anioIdh} onCambiar={setAnioIdh} />
+
+        <div className="filtros">
+          <label>
+            Indicador
+            <select value={defIdh.clave} onChange={(e) => setMetricaIdh(e.target.value)}>
+              {METRICAS_IDH.map((m) => (
+                <option key={m.clave} value={m.clave}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+          {subprefeitura && (
+            <button type="button" className="boton-secundario" onClick={() => setSubprefeitura(null)}>
+              Volver al municipio
+            </button>
+          )}
+        </div>
+
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador titulo={`IDHM en ${nombreIdh}`} indicador={buscaIdh("idhm")} destacado />
+          <TarjetaIndicador titulo="IDHM Renda" indicador={buscaIdh("idhm_renda")} />
+        </div>
+
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>
+              {defIdh.etiqueta} por subprefeitura, {anioIdh}
+            </h2>
+            <MapaDistritos
+              nivel="subprefeitura"
+              valores={idhMapa.valores}
+              unidad={idhMapa.unidad}
+              seleccionado={subprefeitura}
+              onSeleccionar={setSubprefeitura}
+            />
+          </div>
+          <RankingDistritos
+            titulo={`Las 10 subprefeituras con mayor ${defIdh.etiqueta}`}
+            ranking={idhMapa.ranking}
             unidad={idhMapa.unidad}
             seleccionado={subprefeitura}
             onSeleccionar={setSubprefeitura}
+            columna="Subprefeitura"
           />
         </div>
-        <RankingDistritos
-          titulo={`Las 10 subprefeituras con mayor ${defIdh.etiqueta}`}
-          ranking={idhMapa.ranking}
-          unidad={idhMapa.unidad}
-          seleccionado={subprefeitura}
-          onSeleccionar={setSubprefeitura}
-          columna="Subprefeitura"
+
+        <aside className="limitacion">
+          <strong>Antes de usar el IDHM:</strong> son cifras de los censos de 2000 y 2010, así que no muestran cómo está
+          cada zona hoy. La fuente trae 31 prefeituras regionales: Sapopemba, que desde 2013 es una subprefeitura
+          aparte, está dentro de Vila Prudente y aparece sin dato en el mapa.
+        </aside>
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="gente-nacimientos">
+        <header className="seccion-cabecera">
+          <h2 className="subtitulo-seccion">¿Cuántos bebés nacen y dónde?</h2>
+          <p className="entrada">
+            Nacidos vivos por distrito y año, del Sistema de Información sobre Nacidos Vivos (SINASC) de la Secretaría
+            de Salud, y su tasa por mil habitantes. Haz clic en un distrito para ver sus cifras.
+          </p>
+        </header>
+
+        <SelectorAnio
+          etiqueta="Año de los nacimientos"
+          anios={ANIOS_NACIMIENTOS}
+          valor={anioNac}
+          onCambiar={setAnioNac}
         />
-      </div>
 
-      <aside className="limitacion">
-        <strong>Antes de usar el IDHM:</strong> son cifras de los censos de 2000 y 2010, así que no muestran cómo está
-        cada zona hoy. La fuente trae 31 prefeituras regionales: Sapopemba, que desde 2013 es una subprefeitura aparte,
-        está dentro de Vila Prudente y aparece sin dato en el mapa.
-      </aside>
+        <div className="filtros">
+          <label>
+            Indicador
+            <select value={defNac.clave} onChange={(e) => setMetricaNac(e.target.value)}>
+              {METRICAS_NACIMIENTOS.map((m) => (
+                <option key={m.clave} value={m.clave}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+          {distrito && (
+            <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
+              Volver al municipio
+            </button>
+          )}
+        </div>
 
-      <header className="seccion-cabecera">
-        <h2 className="subtitulo-seccion">¿Cuántos bebés nacen y dónde?</h2>
-        <p className="entrada">
-          Nacidos vivos por distrito y año, del Sistema de Información sobre Nacidos Vivos (SINASC) de la Secretaría de
-          Salud, y su tasa por mil habitantes. Haz clic en un distrito para ver sus cifras.
-        </p>
-      </header>
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador
+            titulo={`Nacimientos en ${buscaNac("nacidos_vivos")?.nombre_territorio ?? nombreTerritorio}`}
+            indicador={buscaNac("nacidos_vivos")}
+            destacado
+          />
+          <TarjetaIndicador titulo="Nacimientos por mil habitantes" indicador={buscaNac("nacidos_vivos_por_mil_hab")} />
+          <TarjetaIndicador
+            titulo="Sin distrito conocido"
+            indicador={buscaNac("nacidos_vivos_sin_ubicacion_pct", "MSP")}
+          />
+        </div>
 
-      <SelectorAnio
-        etiqueta="Año de los nacimientos"
-        anios={ANIOS_NACIMIENTOS}
-        valor={anioNac}
-        onCambiar={setAnioNac}
-      />
-
-      <div className="filtros">
-        <label>
-          Indicador
-          <select value={defNac.clave} onChange={(e) => setMetricaNac(e.target.value)}>
-            {METRICAS_NACIMIENTOS.map((m) => (
-              <option key={m.clave} value={m.clave}>
-                {m.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
-        {distrito && (
-          <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
-            Volver al municipio
-          </button>
-        )}
-      </div>
-
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador
-          titulo={`Nacimientos en ${buscaNac("nacidos_vivos")?.nombre_territorio ?? nombreTerritorio}`}
-          indicador={buscaNac("nacidos_vivos")}
-          destacado
-        />
-        <TarjetaIndicador titulo="Nacimientos por mil habitantes" indicador={buscaNac("nacidos_vivos_por_mil_hab")} />
-        <TarjetaIndicador
-          titulo="Sin distrito conocido"
-          indicador={buscaNac("nacidos_vivos_sin_ubicacion_pct", "MSP")}
-        />
-      </div>
-
-      <div className="rejilla-dos">
-        <div className="panel">
-          <h2>
-            {defNac.etiqueta} por distrito, {anioNac}
-          </h2>
-          <MapaDistritos
-            valores={nacMapa.valores}
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>
+              {defNac.etiqueta} por distrito, {anioNac}
+            </h2>
+            <MapaDistritos
+              valores={nacMapa.valores}
+              unidad={nacMapa.unidad}
+              seleccionado={distrito}
+              onSeleccionar={setDistrito}
+            />
+          </div>
+          <RankingDistritos
+            titulo={`Los 10 distritos con más ${defNac.etiqueta.toLowerCase()}`}
+            ranking={nacMapa.ranking}
             unidad={nacMapa.unidad}
             seleccionado={distrito}
             onSeleccionar={setDistrito}
           />
         </div>
-        <RankingDistritos
-          titulo={`Los 10 distritos con más ${defNac.etiqueta.toLowerCase()}`}
-          ranking={nacMapa.ranking}
-          unidad={nacMapa.unidad}
-          seleccionado={distrito}
-          onSeleccionar={setDistrito}
-        />
-      </div>
 
-      <aside className="limitacion">
-        <strong>Antes de comparar años:</strong> en 2024 y 2025 una parte de los nacimientos viene sin distrito (la
-        tarjeta «Sin distrito conocido» da el porcentaje del año elegido), así que las cifras por distrito de esos años
-        quedan por debajo de lo real y no se pueden comparar con 2023. La fuente también separa los partos vaginales y
-        por cesárea, pero ese dato es Sensible en el Diccionario y el sitio publica solo el total.
-      </aside>
+        <aside className="limitacion">
+          <strong>Antes de comparar años:</strong> en 2024 y 2025 una parte de los nacimientos viene sin distrito (la
+          tarjeta «Sin distrito conocido» da el porcentaje del año elegido), así que las cifras por distrito de esos
+          años quedan por debajo de lo real y no se pueden comparar con 2023. La fuente también separa los partos
+          vaginales y por cesárea, pero ese dato es Sensible en el Diccionario y el sitio publica solo el total.
+        </aside>
+      </SeccionCapitulo>
 
       <aside className="limitacion">
         <strong>Lo que esta sección no muestra:</strong> el índice de vulnerabilidad del censo (F41) es Sensible y no se

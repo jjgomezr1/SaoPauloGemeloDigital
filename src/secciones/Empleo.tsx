@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import CodigoPregunta from "../componentes/CodigoPregunta";
-import { EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
+import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import BarraComposicion from "../componentes/BarraComposicion";
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
+import ConcentracionDistritos from "../componentes/ConcentracionDistritos";
+import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
+import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
 import RankingDistritos from "../componentes/RankingDistritos";
 import SelectorAnio from "../componentes/SelectorAnio";
@@ -61,6 +52,12 @@ const RAZAS = [
   { clave: "nao_identificada", etiqueta: "No identificada" },
 ];
 
+const CAPITULOS: Capitulo[] = [
+  { id: "empleo-distritos", titulo: "Distritos" },
+  { id: "empleo-raza", titulo: "Raza o color" },
+  { id: "empleo-evolucion", titulo: "Evolución" },
+];
+
 export default function Empleo() {
   const [indice, setIndice] = useState<IndiceSeccion>();
   const [anioUrl, setAnio] = useParametro("anio");
@@ -90,6 +87,8 @@ export default function Empleo() {
   }, [distrito]);
 
   const { valores, ranking, unidad } = useMemo(() => metricaPorTerritorio(datosAnio, metrica), [datosAnio, metrica]);
+  // La concentración se mide siempre en empleos, sea cual sea el indicador del mapa.
+  const rankingEmpleos = useMemo(() => metricaPorTerritorio(datosAnio, "empleos_formales").ranking, [datosAnio]);
 
   const territorio = distrito ?? "MSP";
   const busca = (clave: string) =>
@@ -108,153 +107,162 @@ export default function Empleo() {
 
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <p className="rotulo-pregunta">
-          <CodigoPregunta codigo="P2" /> Pregunta 2
-        </p>
-        <h1>¿Cómo se distribuye el empleo formal entre los distritos?</h1>
+      <CabeceraSeccion
+        seccion="empleo"
+        pregunta="P2"
+        titulo="¿Cómo se distribuye el empleo formal entre los distritos?"
+        visual={
+          <ConcentracionDistritos
+            ranking={rankingEmpleos}
+            anio={anio}
+            seleccionado={distrito}
+            onSeleccionar={setDistrito}
+          />
+        }
+      >
         <p className="entrada">
           Empleos y establecimientos con registro formal (RAIS) en los 96 distritos, 2011 a 2024. Muestra dónde trabaja
           la gente, no dónde vive. Haz clic en un distrito para ver su serie.
         </p>
-      </header>
+      </CabeceraSeccion>
 
-      {/* Los años cambian con el indicador: por sexo desde 2022, por raza o color desde 2023. */}
-      <SelectorAnio etiqueta="Año" anios={anios} valor={anio} onCambiar={setAnio} />
+      <Estaciones capitulos={CAPITULOS} />
 
-      <div className="filtros">
-        <label>
-          Indicador
-          <select value={metrica} onChange={(e) => setMetrica(e.target.value)}>
-            {METRICAS.map((m) => (
-              <option key={m.clave} value={m.clave}>
-                {m.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
-        {distrito && (
-          <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
-            Volver al municipio
-          </button>
-        )}
-      </div>
+      <SeccionCapitulo id="empleo-distritos">
+        {/* Los años cambian con el indicador: por sexo desde 2022, por raza o color desde 2023. */}
+        <SelectorAnio etiqueta="Año" anios={anios} valor={anio} onCambiar={setAnio} />
 
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador
-          titulo={`Empleos formales en ${nombreTerritorio}`}
-          indicador={busca("empleos_formales")}
-          destacado
-        />
-        <TarjetaIndicador
-          titulo={`Establecimientos en ${nombreTerritorio}`}
-          indicador={busca("establecimientos_formales")}
-        />
-        {distrito && (
-          <TarjetaIndicador
-            titulo="Participación en el municipio"
-            indicador={busca("empleos_formales_participacion")}
-          />
-        )}
-        {busca("empleos_femenino_pct") && (
-          <TarjetaIndicador titulo="Empleos ocupados por mujeres" indicador={busca("empleos_femenino_pct")} />
-        )}
-      </div>
-
-      <div className="rejilla-dos">
-        <div className="panel">
-          <h2>
-            {def.etiqueta} por distrito, {anio}
-          </h2>
-          <MapaDistritos valores={valores} unidad={unidad} seleccionado={distrito} onSeleccionar={setDistrito} />
+        <div className="filtros">
+          <label>
+            Indicador
+            <select value={metrica} onChange={(e) => setMetrica(e.target.value)}>
+              {METRICAS.map((m) => (
+                <option key={m.clave} value={m.clave}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+          {distrito && (
+            <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
+              Volver al municipio
+            </button>
+          )}
         </div>
 
-        <RankingDistritos
-          titulo={`Los 10 distritos con más ${def.etiqueta.toLowerCase()}`}
-          ranking={ranking}
-          unidad={unidad}
-          seleccionado={distrito}
-          onSeleccionar={setDistrito}
-        >
-          <p className="nota">Excluye las filas «inválidos» y «no localizados», que se conservan en el lago.</p>
-        </RankingDistritos>
-      </div>
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador
+            titulo={`Empleos formales en ${nombreTerritorio}`}
+            indicador={busca("empleos_formales")}
+            destacado
+          />
+          <TarjetaIndicador
+            titulo={`Establecimientos en ${nombreTerritorio}`}
+            indicador={busca("establecimientos_formales")}
+          />
+          {distrito && (
+            <TarjetaIndicador
+              titulo="Participación en el municipio"
+              indicador={busca("empleos_formales_participacion")}
+            />
+          )}
+          {busca("empleos_femenino_pct") && (
+            <TarjetaIndicador titulo="Empleos ocupados por mujeres" indicador={busca("empleos_femenino_pct")} />
+          )}
+        </div>
 
-      {hayRaza && (
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>
+              {def.etiqueta} por distrito, {anio}
+            </h2>
+            <MapaDistritos valores={valores} unidad={unidad} seleccionado={distrito} onSeleccionar={setDistrito} />
+          </div>
+
+          <RankingDistritos
+            titulo={`Los 10 distritos con más ${def.etiqueta.toLowerCase()}`}
+            ranking={ranking}
+            unidad={unidad}
+            seleccionado={distrito}
+            onSeleccionar={setDistrito}
+          >
+            <p className="nota">Excluye las filas «inválidos» y «no localizados», que se conservan en el lago.</p>
+          </RankingDistritos>
+        </div>
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="empleo-raza">
+        <h2 className="titulo-capitulo">¿Quién ocupa los empleos?</h2>
+        {hayRaza ? (
+          <div className="panel">
+            <h2>
+              Empleos por raza o color en {nombreTerritorio}, {anio}
+            </h2>
+            <BarraComposicion
+              descripcion={`Empleos por raza o color en ${nombreTerritorio}, ${anio}`}
+              sonPorcentajes
+              segmentos={razas
+                .filter((r) => r.indicador && tieneValor(r.indicador))
+                .map((r) => ({ etiqueta: r.etiqueta, valor: r.indicador?.valor ?? 0 }))}
+            />
+            <p className="nota">
+              Fuente {razas.find((r) => r.indicador)?.indicador?.fuente_id} (RAIS vía Infocidade). Raza o color es un
+              dato sensible: solo se publica como porcentaje, y una categoría con menos de 10 empleos no se muestra. En
+              2023, el 10,8 % de los empleos del municipio no tenía raza o color registrada; en 2024, el 2,4 %.
+            </p>
+          </div>
+        ) : (
+          <p className="limitacion">
+            El empleo por raza o color existe solo para 2023 y 2024: elige uno de esos años en la barra de arriba.
+          </p>
+        )}
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="empleo-evolucion">
+        <h2 className="titulo-capitulo">¿Cómo ha cambiado?</h2>
+
         <div className="panel">
           <h2>
-            Empleos por raza o color en {nombreTerritorio}, {anio}
+            {defSerie.etiqueta} en {nombreTerritorio}, {periodoSerie}
           </h2>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart
-              data={razas
-                .filter((r) => r.indicador && tieneValor(r.indicador))
-                .map((r) => ({
-                  nombre: r.etiqueta,
-                  valor: r.indicador?.valor,
-                }))}
-              layout="vertical"
-              margin={{ left: 8, right: 48 }}
-              barCategoryGap={4}
-            >
-              <CartesianGrid horizontal={false} stroke="var(--grilla)" />
-              <XAxis type="number" unit=" %" {...EJE} />
-              <YAxis type="category" dataKey="nombre" width={110} {...EJE} />
-              <Tooltip
-                cursor={{ fill: "var(--superficie-2)" }}
-                formatter={(v) => [formatear(Number(v), "%"), "De los empleos"]}
-                {...ESTILO_TOOLTIP}
-              />
-              <Bar dataKey="valor" fill={SERIE_1} radius={[0, 4, 4, 0]}>
-                <LabelList
-                  dataKey="valor"
-                  position="right"
-                  formatter={(v: unknown) => formatear(Number(v), "%")}
-                  style={{ fill: "var(--texto-2)", fontSize: 12 }}
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={serieMetrica} margin={{ left: 8, right: 16, top: 8 }}>
+              <defs>
+                <linearGradient id="empleo-relleno" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={SERIE_1} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={SERIE_1} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="var(--grilla)" />
+              <XAxis dataKey="anio" {...EJE} />
+              <YAxis tickFormatter={formatearCorto} width={60} {...EJE} />
+              {/* El quiebre solo se marca si la serie empieza antes: en sexo y raza es su primer año. */}
+              {serieMetrica[0]?.anio < "2022" && (
+                <ReferenceLine
+                  x="2022"
+                  stroke="var(--texto-tenue)"
+                  strokeDasharray="4 4"
+                  label={{ value: "Quiebre RAIS", fontSize: 11, fill: "var(--texto-tenue)", position: "insideTopLeft" }}
                 />
-              </Bar>
-            </BarChart>
+              )}
+              <Tooltip formatter={(v) => [formatear(Number(v), unidadSerie), defSerie.etiqueta]} {...ESTILO_TOOLTIP} />
+              <Area
+                dataKey="valor"
+                stroke={SERIE_1}
+                strokeWidth={2.5}
+                fill="url(#empleo-relleno)"
+                dot={{ r: 4, fill: SERIE_1, strokeWidth: 2, stroke: "var(--superficie)" }}
+                activeDot={{ r: 6, strokeWidth: 3, stroke: "var(--superficie)" }}
+                {...ANIMACION}
+              />
+            </AreaChart>
           </ResponsiveContainer>
           <p className="nota">
-            Fuente {razas.find((r) => r.indicador)?.indicador?.fuente_id} (RAIS vía Infocidade). Raza o color es un dato
-            sensible: solo se publica como porcentaje, y una categoría con menos de 10 empleos no se muestra. En 2023,
-            el 10,8 % de los empleos del municipio no tenía raza o color registrada; en 2024, el 2,4 %.
+            Desde 2022 la RAIS cambió la forma de captar los datos (nota técnica del MTE): los saltos alrededor de ese
+            año, como el de Brás en 2022, pueden ser del registro y no de la economía.
           </p>
         </div>
-      )}
-
-      <div className="panel">
-        <h2>
-          {defSerie.etiqueta} en {nombreTerritorio}, {periodoSerie}
-        </h2>
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={serieMetrica} margin={{ left: 8, right: 16, top: 8 }}>
-            <CartesianGrid vertical={false} stroke="var(--grilla)" />
-            <XAxis dataKey="anio" {...EJE} />
-            <YAxis tickFormatter={formatearCorto} width={60} {...EJE} />
-            {/* El quiebre solo se marca si la serie empieza antes: en sexo y raza es su primer año. */}
-            {serieMetrica[0]?.anio < "2022" && (
-              <ReferenceLine
-                x="2022"
-                stroke="var(--texto-tenue)"
-                strokeDasharray="4 4"
-                label={{ value: "Quiebre RAIS", fontSize: 11, fill: "var(--texto-tenue)", position: "insideTopLeft" }}
-              />
-            )}
-            <Tooltip formatter={(v) => [formatear(Number(v), unidadSerie), defSerie.etiqueta]} {...ESTILO_TOOLTIP} />
-            <Line
-              dataKey="valor"
-              stroke={SERIE_1}
-              strokeWidth={2}
-              dot={{ r: 4, fill: SERIE_1, strokeWidth: 2, stroke: "var(--superficie)" }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <p className="nota">
-          Desde 2022 la RAIS cambió la forma de captar los datos (nota técnica del MTE): los saltos alrededor de ese
-          año, como el de Brás en 2022, pueden ser del registro y no de la economía.
-        </p>
-      </div>
+      </SeccionCapitulo>
 
       <aside className="limitacion">
         <strong>Lo que esta sección no muestra todavía:</strong> empleo por sector económico (no está en el lago). El

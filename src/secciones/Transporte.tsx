@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import CodigoPregunta from "../componentes/CodigoPregunta";
-import { EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import Anillos from "../componentes/Anillos";
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
+import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
+import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
 import RankingDistritos from "../componentes/RankingDistritos";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
@@ -52,6 +54,12 @@ interface ArchivoPasajeros extends ArchivoIndicadores {
   radio_cobertura_m: number;
 }
 
+const CAPITULOS: Capitulo[] = [
+  { id: "transporte-cobertura", titulo: "Cobertura" },
+  { id: "transporte-equipamientos", titulo: "Equipamientos" },
+  { id: "transporte-pasajeros", titulo: "Pasajeros" },
+];
+
 export default function Transporte() {
   const [datos, setDatos] = useState<Indicador[]>([]);
   const [radio, setRadio] = useState<number>();
@@ -92,130 +100,161 @@ export default function Transporte() {
 
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <p className="rotulo-pregunta">
-          <CodigoPregunta codigo="P1" /> Pregunta 1
-        </p>
-        <h1>¿Qué tan cubierta está la ciudad por transporte público?</h1>
+      <CabeceraSeccion
+        seccion="transporte"
+        pregunta="P1"
+        titulo="¿Qué tan cubierta está la ciudad por transporte público?"
+        visual={
+          <Anillos
+            territorio={nombreTerritorio}
+            anillos={[
+              { etiqueta: "de la población, a pie de bus o metro", indicador: busca("cobertura_poblacion") },
+              { etiqueta: "del área, cubierta por bus o metro", indicador: busca("cobertura_area") },
+              { etiqueta: "de la población, cerca del metro", indicador: busca("cobertura_poblacion_metro") },
+            ]}
+          />
+        }
+      >
         <p className="entrada">
           Paradas de bus, líneas y estaciones de metro de GeoSampa cruzadas con la población del censo 2022 en los 96
           distritos. Un habitante está «cubierto» si vive a {radio ?? "…"} m o menos, en línea recta, de una parada o
           estación. Haz clic en un distrito para ver sus cifras.
         </p>
-      </header>
+      </CabeceraSeccion>
 
-      <div className="filtros">
-        <label>
-          Indicador
-          <select value={metrica} onChange={(e) => setMetrica(e.target.value as Clave)}>
-            {GRUPOS.map((grupo) => (
-              <optgroup key={grupo} label={grupo}>
-                {METRICAS.filter((m) => m.grupo === grupo).map((m) => (
-                  <option key={m.clave} value={m.clave}>
-                    {m.etiqueta}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        {distrito && (
-          <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
-            Volver al municipio
-          </button>
-        )}
-      </div>
+      <Estaciones capitulos={CAPITULOS} />
 
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador
-          titulo={`Población cubierta en ${nombreTerritorio}`}
-          indicador={busca("cobertura_poblacion")}
-          destacado
-        />
-        <TarjetaIndicador titulo="Población cubierta solo por metro" indicador={busca("cobertura_poblacion_metro")} />
-        <TarjetaIndicador titulo="Paradas de bus" indicador={busca("paradas_bus")} />
-        <TarjetaIndicador titulo="Estaciones de metro" indicador={busca("estaciones_metro")} />
-      </div>
-
-      <div className="rejilla-dos">
-        <div className="panel">
-          <h2>{def.etiqueta} por distrito</h2>
-          <MapaDistritos valores={valores} unidad={unidad} seleccionado={distrito} onSeleccionar={setDistrito} />
+      <SeccionCapitulo id="transporte-cobertura">
+        <div className="filtros">
+          <label>
+            Indicador
+            <select value={metrica} onChange={(e) => setMetrica(e.target.value as Clave)}>
+              {GRUPOS.map((grupo) => (
+                <optgroup key={grupo} label={grupo}>
+                  {METRICAS.filter((m) => m.grupo === grupo).map((m) => (
+                    <option key={m.clave} value={m.clave}>
+                      {m.etiqueta}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          {distrito && (
+            <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
+              Volver al municipio
+            </button>
+          )}
         </div>
 
-        <RankingDistritos
-          titulo={`Los 10 distritos con ${def.orden === "asc" ? "menor" : "mayor"} ${def.etiqueta.toLowerCase()}`}
-          ranking={ranking}
-          unidad={unidad}
-          seleccionado={distrito}
-          onSeleccionar={setDistrito}
-        >
-          {distrito && (
-            <div className="rejilla-mini">
-              <TarjetaIndicador titulo="Población" indicador={busca("poblacion")} />
-              <TarjetaIndicador titulo="Área cubierta" indicador={busca("cobertura_area")} />
-            </div>
-          )}
-        </RankingDistritos>
-      </div>
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador
+            titulo={`Población cubierta en ${nombreTerritorio}`}
+            indicador={busca("cobertura_poblacion")}
+            destacado
+          />
+          <TarjetaIndicador titulo="Población cubierta solo por metro" indicador={busca("cobertura_poblacion_metro")} />
+          <TarjetaIndicador titulo="Paradas de bus" indicador={busca("paradas_bus")} />
+          <TarjetaIndicador titulo="Estaciones de metro" indicador={busca("estaciones_metro")} />
+        </div>
 
-      <h2 className="subtitulo">Equipamientos en {nombreTerritorio}</h2>
-      <div className="rejilla-tarjetas">
-        <TarjetaIndicador titulo="Escuelas públicas de educación infantil" indicador={busca("escuelas_infantil")} />
-        <TarjetaIndicador titulo="Escuelas públicas fundamental y media" indicador={busca("escuelas_basica")} />
-        <TarjetaIndicador titulo="Ferias libres" indicador={busca("ferias")} />
-        <TarjetaIndicador titulo="Shoppings" indicador={busca("shoppings")} />
-      </div>
-
-      {pasajeros && (
         <div className="rejilla-dos">
           <div className="panel">
-            <h2>Pasajeros por mes en los buses municipales</h2>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={serieMensual} margin={{ left: 8, right: 16, top: 8 }}>
-                <CartesianGrid vertical={false} stroke="var(--grilla)" />
-                <XAxis dataKey="mes" {...EJE} />
-                <YAxis tickFormatter={formatearCorto} width={60} {...EJE} />
-                <Tooltip formatter={(v) => [formatear(Number(v)), "Pasajeros"]} {...ESTILO_TOOLTIP} />
-                <Line
-                  dataKey="valor"
-                  stroke={SERIE_1}
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: SERIE_1, strokeWidth: 2, stroke: "var(--superficie)" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="nota">
-              Fuente F05 (SPTrans). Suma de los reportes diarios; un mes al que le falta algún día en el portal se
-              completa con el consolidado mensual de SPTrans. No se reparte por distrito porque la fuente no tiene
-              geografía.
-            </p>
+            <h2>{def.etiqueta} por distrito</h2>
+            <MapaDistritos valores={valores} unidad={unidad} seleccionado={distrito} onSeleccionar={setDistrito} />
           </div>
-          <div className="panel">
-            <h2>Las 15 líneas con más pasajeros</h2>
-            <ResponsiveContainer width="100%" height={420}>
-              <BarChart
-                data={lineas.map((i) => ({ nombre: `${i.codigo_territorio} ${i.nombre_territorio}`, valor: i.valor }))}
-                layout="vertical"
-                margin={{ left: 8, right: 16 }}
-                barCategoryGap={3}
-              >
-                <CartesianGrid horizontal={false} stroke="var(--grilla)" />
-                <XAxis type="number" tickFormatter={formatearCorto} {...EJE} />
-                <YAxis type="category" dataKey="nombre" width={190} stroke="var(--texto-tenue)" fontSize={11} />
-                <Tooltip
-                  cursor={{ fill: "var(--superficie-2)" }}
-                  formatter={(v) => [formatear(Number(v)), "Pasajeros"]}
-                  {...ESTILO_TOOLTIP}
-                />
-                <Bar dataKey="valor" fill={SERIE_1} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <p className="nota">
-              Total de {meses[0]} a {meses[meses.length - 1]} ({meses.length} meses completos).
-            </p>
-          </div>
+
+          <RankingDistritos
+            titulo={`Los 10 distritos con ${def.orden === "asc" ? "menor" : "mayor"} ${def.etiqueta.toLowerCase()}`}
+            ranking={ranking}
+            unidad={unidad}
+            seleccionado={distrito}
+            onSeleccionar={setDistrito}
+          >
+            {distrito && (
+              <div className="rejilla-mini">
+                <TarjetaIndicador titulo="Población" indicador={busca("poblacion")} />
+                <TarjetaIndicador titulo="Área cubierta" indicador={busca("cobertura_area")} />
+              </div>
+            )}
+          </RankingDistritos>
         </div>
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="transporte-equipamientos">
+        <h2 className="titulo-capitulo">Equipamientos en {nombreTerritorio}</h2>
+        <div className="rejilla-tarjetas">
+          <TarjetaIndicador titulo="Escuelas públicas de educación infantil" indicador={busca("escuelas_infantil")} />
+          <TarjetaIndicador titulo="Escuelas públicas fundamental y media" indicador={busca("escuelas_basica")} />
+          <TarjetaIndicador titulo="Ferias libres" indicador={busca("ferias")} />
+          <TarjetaIndicador titulo="Shoppings" indicador={busca("shoppings")} />
+        </div>
+      </SeccionCapitulo>
+
+      {pasajeros && (
+        <SeccionCapitulo id="transporte-pasajeros">
+          <h2 className="titulo-capitulo">¿Cuánta gente mueven los buses?</h2>
+          <div className="rejilla-dos">
+            <div className="panel">
+              <h2>Pasajeros por mes en los buses municipales</h2>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={serieMensual} margin={{ left: 8, right: 16, top: 8 }}>
+                  <defs>
+                    <linearGradient id="pasajeros-relleno" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={SERIE_1} stopOpacity={0.35} />
+                      <stop offset="100%" stopColor={SERIE_1} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="var(--grilla)" />
+                  <XAxis dataKey="mes" {...EJE} />
+                  <YAxis tickFormatter={formatearCorto} width={60} {...EJE} />
+                  <Tooltip formatter={(v) => [formatear(Number(v)), "Pasajeros"]} {...ESTILO_TOOLTIP} />
+                  <Area
+                    dataKey="valor"
+                    stroke={SERIE_1}
+                    strokeWidth={2.5}
+                    fill="url(#pasajeros-relleno)"
+                    dot={{ r: 4, fill: SERIE_1, strokeWidth: 2, stroke: "var(--superficie)" }}
+                    activeDot={{ r: 6, strokeWidth: 3, stroke: "var(--superficie)" }}
+                    {...ANIMACION}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="nota">
+                Fuente F05 (SPTrans). Suma de los reportes diarios; un mes al que le falta algún día en el portal se
+                completa con el consolidado mensual de SPTrans. No se reparte por distrito porque la fuente no tiene
+                geografía.
+              </p>
+            </div>
+            <div className="panel">
+              <h2>Las 15 líneas con más pasajeros</h2>
+              <ResponsiveContainer width="100%" height={420}>
+                <BarChart
+                  data={lineas.map((i) => ({
+                    nombre: `${i.codigo_territorio} ${i.nombre_territorio}`,
+                    valor: i.valor,
+                  }))}
+                  layout="vertical"
+                  margin={{ left: 8, right: 16 }}
+                  barCategoryGap={3}
+                >
+                  <CartesianGrid horizontal={false} stroke="var(--grilla)" />
+                  <XAxis type="number" tickFormatter={formatearCorto} {...EJE} />
+                  <YAxis type="category" dataKey="nombre" width={190} stroke="var(--texto-tenue)" fontSize={11} />
+                  <Tooltip
+                    cursor={{ fill: "var(--superficie-2)" }}
+                    formatter={(v) => [formatear(Number(v)), "Pasajeros"]}
+                    {...ESTILO_TOOLTIP}
+                  />
+                  <Bar dataKey="valor" fill={SERIE_1} radius={[0, 4, 4, 0]} {...ANIMACION} />
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="nota">
+                Total de {meses[0]} a {meses[meses.length - 1]} ({meses.length} meses completos).
+              </p>
+            </div>
+          </div>
+        </SeccionCapitulo>
       )}
 
       <aside className="limitacion">

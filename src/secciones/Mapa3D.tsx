@@ -1,5 +1,6 @@
 import type { Feature, FeatureCollection } from "geojson";
 import { useEffect, useRef, useState } from "react";
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import { agregarMascara, estiloSaoPaulo, LIMITES_NAVEGACION } from "../componentes/mapaBase";
 import {
   type CameraOptions,
@@ -674,14 +675,13 @@ export default function Mapa3D() {
 
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <h1>La ciudad en tres dimensiones</h1>
+      <CabeceraSeccion seccion="mapa" titulo="La ciudad en tres dimensiones">
         <p className="entrada">
           Edificios de OpenStreetMap extruidos sobre el mapa base de OpenFreeMap, con las capas oficiales de GeoSampa
           encima. Arrastra con clic derecho (o dos dedos) para inclinar y girar; haz clic en una línea, estación o
           parada. Pasa el mouse por una estrella morada para ver la foto de ese sitio emblemático.
         </p>
-      </header>
+      </CabeceraSeccion>
 
       <div ref={envoltorio} className="mapa-3d-contenedor">
         <div
