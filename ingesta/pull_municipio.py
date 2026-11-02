@@ -52,14 +52,6 @@ TOTALES = ("total", "subtotal")
 # Año del censo de salud que publica la fuente (y que registra el Diccionario).
 ANIO_SALUD = 2025
 
-# F04: los dos bloques de la primera columna.
-BLOQUES_F04 = {
-    "receita": "Receita",
-    "receitas": "Receita",
-    "despesa": "Despesa",
-    "despesas": "Despesa",
-}
-
 
 def _clave(texto) -> str:
     return limpiar_espacios(str(texto)).lower()
@@ -154,45 +146,54 @@ def _anios_en_encabezado(fila) -> dict[int, int]:
     return anios
 
 
+# Subtotales agregadores de F04 (no son conceptos hoja): se descartan para no contar dos veces.
+# «...Total» ya lo filtra TOTALES; estos son los grandes grupos corriente/capital.
+SUBTOTALES_F04 = {
+    "receitas correntes",
+    "receitas de capital",
+    "despesas correntes",
+    "despesas de capital",
+}
+# Nombres exactos de los títulos de bloque (filas sin cifras que abren cada sección).
+TITULOS_BLOQUE_F04 = {"receitas": "Receita", "despesas": "Despesa"}
+
+
 def finanzas() -> pd.DataFrame:
     """F04: ingresos por fuente y gastos por categoría del municipio, 2016-2025.
 
-    La fuente tiene dos bloques («Receitas», «Despesas»); dentro, una fila por concepto y una columna
-    por año. Se pasa de ancho a largo y se quitan las filas de total de cada bloque.
+    La fuente tiene dos bloques, «Receitas» y «Despesas», cada uno con su propia fila de años y, debajo,
+    los conceptos. Se pasa de ancho a largo, se descartan los totales («... Total») y los subtotales de
+    nivel corriente/capital, y se dejan los conceptos hoja (los campos del Diccionario).
     """
     ruta = descargar(URL_F04, "f04_receita_despesa", "xls")
     crudo = leer_excel(ruta)
-    # El encabezado de años es la primera fila con varias columnas de año.
-    fila_enc = None
-    anios = {}
-    for i in range(min(15, len(crudo))):
-        candidato = _anios_en_encabezado(crudo.iloc[i])
-        if len(candidato) >= 3:
-            fila_enc, anios = i, candidato
-            break
-    if fila_enc is None:
-        raise ValueError("F04: no se encontró la fila de encabezado con los años (2016 … 2025)")
-
-    cuerpo = crudo.iloc[fila_enc + 1 :]
     filas = []
     tipo_actual = None
-    for _, fila in cuerpo.iterrows():
+    anios: dict[int, int] = {}
+    for _, fila in crudo.iterrows():
         etiqueta = "" if es_vacio(fila[0]) else limpiar_espacios(str(fila[0]))
         clave = etiqueta.lower()
+        # ¿Es la fila de años de un bloque? (p. ej. «2016 … 2025» en las columnas).
+        encabezado = _anios_en_encabezado(fila)
+        if len(encabezado) >= 3:
+            anios = encabezado
+            continue
         if not etiqueta:
             continue
-        # Título de bloque: «Receitas» / «Despesas» (sin cifras).
-        sin_cifras = all(es_vacio(fila[c]) for c in anios)
-        bloque = next((BLOQUES_F04[b] for b in BLOQUES_F04 if clave.startswith(b)), None)
-        if bloque and sin_cifras:
-            tipo_actual = bloque
+        # Título de bloque: exactamente «Receitas» o «Despesas», sin cifras.
+        if clave in TITULOS_BLOQUE_F04:
+            tipo_actual = TITULOS_BLOQUE_F04[clave]
             continue
-        if any(t in clave for t in TOTALES):
+        if clave.startswith(("fonte", "elabora", "nota", "(")):
             continue
-        if sin_cifras:
+        if any(t in clave for t in TOTALES) or clave in SUBTOTALES_F04:
             continue
-        if tipo_actual is None:
-            raise ValueError(f"F04: el concepto {etiqueta!r} aparece antes de «Receitas» o «Despesas»")
+        if tipo_actual is None or not anios:
+            # Antes del primer bloque o sin fila de años: no es un concepto con datos.
+            continue
+        tiene_cifra = any(not es_vacio(fila[c]) for c in anios)
+        if not tiene_cifra:
+            continue
         for col, anio in anios.items():
             valor = a_numero(fila[col])  # «1.234.567,89» → 1234567.89; «-» → None
             filas.append((anio, tipo_actual, etiqueta, valor))
