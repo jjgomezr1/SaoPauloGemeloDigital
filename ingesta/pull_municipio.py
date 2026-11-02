@@ -23,6 +23,7 @@ from comun import (
     es_vacio,
     guardar_lago,
     leer_excel,
+    limpiar_anio,
     limpiar_espacios,
 )
 
@@ -48,6 +49,9 @@ REDES = {
 # Palabras que marcan una fila de total o subtotal, que no se guarda (evita doble conteo).
 TOTALES = ("total", "subtotal")
 
+# Año del censo de salud que publica la fuente (y que registra el Diccionario).
+ANIO_SALUD = 2025
+
 # F04: los dos bloques de la primera columna.
 BLOQUES_F04 = {
     "receita": "Receita",
@@ -61,21 +65,46 @@ def _clave(texto) -> str:
     return limpiar_espacios(str(texto)).lower()
 
 
-def salud() -> pd.DataFrame:
-    """F03: establecimientos de salud por red y tipo de servicio, año 2025.
+def _hoja_salud(ruta) -> tuple[pd.DataFrame, int]:
+    """Elige la hoja con una sola columna de cifras (nombre, conteo) y el año de su título.
 
-    La fuente pone cada red como título de bloque y, debajo, una fila por tipo de servicio con su
-    conteo a la derecha. Se arrastra la red a cada tipo y se descartan las filas de total.
+    El archivo trae varias hojas; algunas comparan dos años en columnas aparte. Se usa la hoja cuya
+    columna 1 es la única con cifras (las demás de comparación vienen vacías) y el año más reciente.
+    """
+    hojas = leer_excel(ruta, sheet_name=None)
+    mejor = None
+    for df in hojas.values():
+        if df.shape[1] < 2 or len(df) < 6:
+            continue
+        # Año del título: está en las primeras filas de la primera columna (p. ej. «2025»).
+        anios_titulo = [
+            limpiar_anio(v) for v in df.iloc[:4, 0].tolist() if re.fullmatch(r"\s*20\d{2}\s*", str(v or ""))
+        ]
+        if not anios_titulo:
+            continue
+        anio = max(anios_titulo)
+        # Cuántas filas de red hay con cifra en la columna 1: la hoja buena las tiene todas.
+        redes = df[df[0].map(_clave).isin(REDES)]
+        con_cifra = sum(not es_vacio(c) for c in redes[1]) if not redes.empty else 0
+        puntaje = (anio, con_cifra, -df.shape[1])  # año reciente, con cifras, y lo más angosta posible
+        if mejor is None or puntaje > mejor[0]:
+            mejor = (puntaje, df, anio)
+    if mejor is None:
+        raise ValueError("F03: no se encontró ninguna hoja con redes y un año en el título")
+    return mejor[1], mejor[2]
+
+
+def salud() -> pd.DataFrame:
+    """F03: establecimientos de salud por red y tipo de servicio, del último año de la fuente.
+
+    La fuente pone cada red como título de bloque (con su subtotal al lado) y, debajo, una fila por
+    tipo de servicio con su conteo. Se arrastra la red a cada tipo y se descartan la fila del total
+    del municipio (MSP) y los subtotales de red, para no contar dos veces.
     """
     ruta = descargar(URL_F03, "f03_salud_por_red", "xls")
-    crudo = leer_excel(ruta)
-    # La tabla tiene dos columnas útiles: nombre (tipo o título de red) y conteo.
-    # Se localiza la primera fila cuyo texto es una red conocida: ahí empieza la tabla.
-    primera = crudo[0].fillna("").map(_clave)
-    inicio = primera[primera.isin(REDES)].index
-    if inicio.empty:
-        raise ValueError("F03: no se encontró ninguna fila de red (Municipal, Estadual, Federal, Privada)")
-    cuerpo = crudo.iloc[inicio[0] :, :2].copy()
+    crudo, anio = _hoja_salud(ruta)
+    # Columnas útiles: 0 = nombre (tipo o título de red), 1 = conteo.
+    cuerpo = crudo.iloc[:, :2].copy()
     cuerpo.columns = ["nombre", "conteo"]
     cuerpo["nombre"] = cuerpo["nombre"].map(lambda v: limpiar_espacios(str(v)) if not es_vacio(v) else "")
 
@@ -85,16 +114,22 @@ def salud() -> pd.DataFrame:
         clave = nombre.lower()
         if not nombre:
             continue
-        if clave in REDES and es_vacio(conteo):
-            # Título de bloque: fija la red y no es un dato.
+        if clave in REDES:
+            # Título de bloque: fija la red. El número de su fila es el subtotal, no se guarda.
             red_actual = REDES[clave]
             continue
-        if any(t in clave for t in TOTALES):
+        if (
+            clave in ("msp", "pmsp", "ano")
+            or clave.startswith(("fonte", "elabora"))
+            or any(t in clave for t in TOTALES)
+        ):
             continue
         if es_vacio(conteo):
+            # Tipo sin cifra en esta hoja (viene en otra columna de comparación): no es un dato de aquí.
             continue
         if red_actual is None:
-            raise ValueError(f"F03: la fila {nombre!r} aparece antes de cualquier título de red")
+            # Antes de la primera red (título, MSP…): no es un tipo de servicio.
+            continue
         filas.append((red_actual, nombre.upper(), int(a_numero(conteo))))
 
     df = pd.DataFrame(filas, columns=["red", "tipo_servicio", "establecimientos"])
@@ -102,6 +137,9 @@ def salud() -> pd.DataFrame:
         raise ValueError("F03: no se leyó ningún establecimiento; revisa la estructura de la fuente")
     df = df[df["establecimientos"] > 0]
     df = df.groupby(["red", "tipo_servicio"], as_index=False)["establecimientos"].sum()
+    # Se comprueba que el año elegido sea el que el Diccionario espera (2025), por si la fuente cambia.
+    if anio != ANIO_SALUD:
+        raise ValueError(f"F03: la hoja más reciente es de {anio}, pero el Diccionario espera {ANIO_SALUD}")
     return df.sort_values(["red", "tipo_servicio"]).reset_index(drop=True)
 
 
