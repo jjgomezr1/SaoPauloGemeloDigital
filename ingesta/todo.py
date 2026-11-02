@@ -26,6 +26,7 @@ PASOS = [
     ["pull_movilidad.py"],
     ["pull_equipamientos.py"],
     ["pull_ambiente.py"],
+    ["pull_municipio.py"],
     ["build_web.py"],
     ["verificar.py"],
 ]

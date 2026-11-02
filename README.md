@@ -24,6 +24,7 @@ ingesta/              scripts de Python (se corren en local o en Docker)
   pull_movilidad.py   F29, F30, F31, F35, F36 (GeoSampa) y F05 (pasajeros SPTrans)
   pull_equipamientos.py  F21-F24 (ferias, shoppings), F33, F34, F39, F40 (GeoSampa) y F32 (favelas)
   pull_ambiente.py    F25-F27 (cobertura vegetal) y F06 (temperatura mínima)
+  pull_municipio.py   F03 (salud por red) y F04 (ingresos y gastos del municipio)
   calculos_p1.py      cobertura de transporte por distrito (P1)
   calculos_equipamientos.py  equipamientos y favelas por distrito
   crudos.py           baja (o empaqueta) la copia de data/raw/ del release

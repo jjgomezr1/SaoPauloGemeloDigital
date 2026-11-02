@@ -49,9 +49,9 @@ export const SECCIONES: Seccion[] = [
   {
     id: "municipio",
     titulo: "Municipio",
-    resumen: "Ingresos y gastos por categoría 2016-2025 y establecimientos de salud.",
+    resumen: "Ingresos y gastos por categoría 2016-2025 y establecimientos de salud por red.",
     fuentes: ["F04", "F03"],
-    lista: false,
+    lista: true,
   },
   {
     id: "ambiente",

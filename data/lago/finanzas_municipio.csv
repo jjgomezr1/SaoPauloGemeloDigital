@@ -1,0 +1,171 @@
+anio,tipo,concepto,valor_rs
+2016,Despesa,Amortização da Dívida,1960600145.27
+2017,Despesa,Amortização da Dívida,2013140763.06
+2018,Despesa,Amortização da Dívida,2121996225.28
+2019,Despesa,Amortização da Dívida,2205737642.5
+2020,Despesa,Amortização da Dívida,1541678444.91
+2021,Despesa,Amortização da Dívida,2993945453.08
+2022,Despesa,Amortização da Dívida,1399508038.28
+2023,Despesa,Amortização da Dívida,734083460.14
+2024,Despesa,Amortização da Dívida,3080282901.28
+2025,Despesa,Amortização da Dívida,1618656966.31
+2016,Despesa,Inversões Financeiras,29382476.58
+2017,Despesa,Inversões Financeiras,72882778.61
+2018,Despesa,Inversões Financeiras,23070485.83
+2019,Despesa,Inversões Financeiras,33491126.0
+2020,Despesa,Inversões Financeiras,5317276.0
+2021,Despesa,Inversões Financeiras,
+2022,Despesa,Inversões Financeiras,315438126.0
+2023,Despesa,Inversões Financeiras,20211392.29
+2024,Despesa,Inversões Financeiras,1176960692.41
+2025,Despesa,Inversões Financeiras,1952244730.66
+2016,Despesa,Investimentos,3023027177.56
+2017,Despesa,Investimentos,1986784806.28
+2018,Despesa,Investimentos,2378452384.23
+2019,Despesa,Investimentos,3559709136.23
+2020,Despesa,Investimentos,4578417026.41
+2021,Despesa,Investimentos,3833014231.86
+2022,Despesa,Investimentos,8863675996.68
+2023,Despesa,Investimentos,14189222885.51
+2024,Despesa,Investimentos,16576973055.53
+2025,Despesa,Investimentos,11125676719.47
+2016,Despesa,Juros e Encargos da Dívida,1150254175.14
+2017,Despesa,Juros e Encargos da Dívida,1212581514.69
+2018,Despesa,Juros e Encargos da Dívida,1176491754.31
+2019,Despesa,Juros e Encargos da Dívida,1136748588.29
+2020,Despesa,Juros e Encargos da Dívida,317201602.55
+2021,Despesa,Juros e Encargos da Dívida,881004093.01
+2022,Despesa,Juros e Encargos da Dívida,162254610.92
+2023,Despesa,Juros e Encargos da Dívida,109254013.55
+2024,Despesa,Juros e Encargos da Dívida,218989763.3
+2025,Despesa,Juros e Encargos da Dívida,692765984.77
+2016,Despesa,Outras Despesas Correntes,22951930706.07
+2017,Despesa,Outras Despesas Correntes,24657820462.18
+2018,Despesa,Outras Despesas Correntes,25492155549.08
+2019,Despesa,Outras Despesas Correntes,27372125557.06
+2020,Despesa,Outras Despesas Correntes,32088013388.63
+2021,Despesa,Outras Despesas Correntes,38026454848.78
+2022,Despesa,Outras Despesas Correntes,47892741949.25
+2023,Despesa,Outras Despesas Correntes,55390160801.83
+2024,Despesa,Outras Despesas Correntes,63360178947.19
+2025,Despesa,Outras Despesas Correntes,67438299983.36
+2016,Despesa,Pessoal e Encargos Sociais,20307324231.0
+2017,Despesa,Pessoal e Encargos Sociais,21470818752.26
+2018,Despesa,Pessoal e Encargos Sociais,22964975336.94
+2019,Despesa,Pessoal e Encargos Sociais,25081612223.69
+2020,Despesa,Pessoal e Encargos Sociais,26384709675.49
+2021,Despesa,Pessoal e Encargos Sociais,27688864503.15
+2022,Despesa,Pessoal e Encargos Sociais,32454721482.23
+2023,Despesa,Pessoal e Encargos Sociais,36386281187.58
+2024,Despesa,Pessoal e Encargos Sociais,39495798267.06
+2025,Despesa,Pessoal e Encargos Sociais,40744162306.68
+2016,Receita,Alienação de Bens,9517812.38
+2017,Receita,Alienação de Bens,22992733.79
+2018,Receita,Alienação de Bens,22428176.04
+2019,Receita,Alienação de Bens,30282356.19
+2020,Receita,Alienação de Bens,50295488.01
+2021,Receita,Alienação de Bens,98215702.11
+2022,Receita,Alienação de Bens,16628991.61
+2023,Receita,Alienação de Bens,355749778.12
+2024,Receita,Alienação de Bens,27275143.71
+2025,Receita,Alienação de Bens,467503452.76
+2016,Receita,Amortização de Empréstimos,20852757.62
+2017,Receita,Amortização de Empréstimos,22320251.23
+2018,Receita,Amortização de Empréstimos,23416568.35
+2019,Receita,Amortização de Empréstimos,22998566.48
+2020,Receita,Amortização de Empréstimos,20501527.73
+2021,Receita,Amortização de Empréstimos,21443316.16
+2022,Receita,Amortização de Empréstimos,238234170.57
+2023,Receita,Amortização de Empréstimos,24801621.08
+2024,Receita,Amortização de Empréstimos,23139929.8
+2025,Receita,Amortização de Empréstimos,27210207.8
+2016,Receita,Operações de crédito,69310730.36
+2017,Receita,Operações de crédito,44420661.72
+2018,Receita,Operações de crédito,148836391.74
+2019,Receita,Operações de crédito,291119102.92
+2020,Receita,Operações de crédito,510196840.16999996
+2021,Receita,Operações de crédito,122178048.7
+2022,Receita,Operações de crédito,103342000.0
+2023,Receita,Operações de crédito,368156173.68
+2024,Receita,Operações de crédito,2422251781.24
+2025,Receita,Operações de crédito,2834849817.08
+2016,Receita,Outras Receitas Correntes,3440078414.98
+2017,Receita,Outras Receitas Correntes,5746949998.2
+2018,Receita,Outras Receitas Correntes,2527740985.5499997
+2019,Receita,Outras Receitas Correntes,2093145211.01
+2020,Receita,Outras Receitas Correntes,1553659919.53
+2021,Receita,Outras Receitas Correntes,1816133859.17
+2022,Receita,Outras Receitas Correntes,5311249051.17
+2023,Receita,Outras Receitas Correntes,7326958104.52
+2024,Receita,Outras Receitas Correntes,7683119373.6
+2025,Receita,Outras Receitas Correntes,7604562298.94
+2016,Receita,Outras Receitas de Capital,450824655.76
+2017,Receita,Outras Receitas de Capital,354044000.61
+2018,Receita,Outras Receitas de Capital,1025002220.46
+2019,Receita,Outras Receitas de Capital,3074144106.35
+2020,Receita,Outras Receitas de Capital,1417007782.64
+2021,Receita,Outras Receitas de Capital,2662143084.47
+2022,Receita,Outras Receitas de Capital,2928615990.83
+2023,Receita,Outras Receitas de Capital,1911051518.72
+2024,Receita,Outras Receitas de Capital,2263069063.66
+2025,Receita,Outras Receitas de Capital,3809500975.39
+2016,Receita,Receita Patrimonial,1468769544.28
+2017,Receita,Receita Patrimonial,988866846.44
+2018,Receita,Receita Patrimonial,772602428.46
+2019,Receita,Receita Patrimonial,1214016095.06
+2020,Receita,Receita Patrimonial,2487234580.8199997
+2021,Receita,Receita Patrimonial,1716641264.82
+2022,Receita,Receita Patrimonial,5211937272.92
+2023,Receita,Receita Patrimonial,5444741187.63
+2024,Receita,Receita Patrimonial,4274940133.44
+2025,Receita,Receita Patrimonial,4658040935.36
+2016,Receita,Receita de Serviços,547455805.71
+2017,Receita,Receita de Serviços,546881797.36
+2018,Receita,Receita de Serviços,257509808.11
+2019,Receita,Receita de Serviços,251629577.53
+2020,Receita,Receita de Serviços,454257360.63
+2021,Receita,Receita de Serviços,289771869.66
+2022,Receita,Receita de Serviços,532191425.82
+2023,Receita,Receita de Serviços,810867933.95
+2024,Receita,Receita de Serviços,988504065.4
+2025,Receita,Receita de Serviços,400837709.89
+2016,Receita,Receita tributária,23377317391.79
+2017,Receita,Receita tributária,25527893006.05
+2018,Receita,Receita tributária,29722678620.43
+2019,Receita,Receita tributária,33809275098.71
+2020,Receita,Receita tributária,35352922853.57
+2021,Receita,Receita tributária,43771345858.79
+2022,Receita,Receita tributária,47822636239.83
+2023,Receita,Receita tributária,52095430669.73
+2024,Receita,Receita tributária,61840959605.08
+2025,Receita,Receita tributária,68022398910.56
+2016,Receita,Receitas de Contribuições,3729282352.82
+2017,Receita,Receitas de Contribuições,3750935301.01
+2018,Receita,Receitas de Contribuições,3947498710.49
+2019,Receita,Receitas de Contribuições,4981611550.44
+2020,Receita,Receitas de Contribuições,5169624183.5
+2021,Receita,Receitas de Contribuições,5149675966.26
+2022,Receita,Receitas de Contribuições,7523217028.11
+2023,Receita,Receitas de Contribuições,9135182562.22
+2024,Receita,Receitas de Contribuições,9828483783.33
+2025,Receita,Receitas de Contribuições,9612186089.87
+2016,Receita,Transferências Correntes,13568773867.14
+2017,Receita,Transferências Correntes,14120694115.66
+2018,Receita,Transferências Correntes,15176509482.84
+2019,Receita,Transferências Correntes,16349804325.03
+2020,Receita,Transferências Correntes,18893713493.78
+2021,Receita,Transferências Correntes,20346013939.21
+2022,Receita,Transferências Correntes,22147053567.32
+2023,Receita,Transferências Correntes,22312279659.21
+2024,Receita,Transferências Correntes,24540578224.51
+2025,Receita,Transferências Correntes,25533092405.19
+2016,Receita,Transferências de Capital,844879900.53
+2017,Receita,Transferências de Capital,642087073.96
+2018,Receita,Transferências de Capital,713788872.77
+2019,Receita,Transferências de Capital,598956210.62
+2020,Receita,Transferências de Capital,751796597.54
+2021,Receita,Transferências de Capital,657132979.69
+2022,Receita,Transferências de Capital,757792647.69
+2023,Receita,Transferências de Capital,684369103.15
+2024,Receita,Transferências de Capital,3118560272.35
+2025,Receita,Transferências de Capital,481616688.52
