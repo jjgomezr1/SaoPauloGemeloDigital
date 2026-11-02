@@ -1,5 +1,6 @@
 import { formatear, type Indicador } from "../datos";
 import { useFuentes } from "./contexto";
+import { useContador } from "./useContador";
 
 const ETIQUETA_TIPO: Record<Indicador["tipo"], string> = {
   observado: "Observado",
@@ -22,6 +23,7 @@ interface Props {
 /** La tarjeta siempre muestra: cifra, unidad, fuente (ID y entidad), vigencia, tipo y advertencia. */
 export default function TarjetaIndicador({ titulo, indicador, destacado }: Props) {
   const fuentes = useFuentes();
+  const animado = useContador(indicador?.valor ?? null);
   if (!indicador) {
     return (
       <article className="tarjeta cargando" aria-busy>
@@ -32,10 +34,12 @@ export default function TarjetaIndicador({ titulo, indicador, destacado }: Props
   }
   const fuente = fuentes[indicador.fuente_id];
   return (
-    <article className="tarjeta">
+    <article className={destacado ? "tarjeta tarjeta-destacada" : "tarjeta"}>
       <h3>{titulo}</h3>
       <p className={destacado ? "cifra cifra-destacada" : "cifra"}>
-        {formatear(indicador.valor, indicador.unidad)}
+        {/* La cifra animada se oculta a los lectores de pantalla, que leen solo la final. */}
+        <span aria-hidden>{formatear(animado, indicador.unidad)}</span>
+        <span className="solo-lector">{formatear(indicador.valor, indicador.unidad)}</span>
         {!indicador.unidad.startsWith("%") && <span className="unidad"> {unidadVisible(indicador.unidad)}</span>}
       </p>
       <p className="territorio">{indicador.nombre_territorio}</p>

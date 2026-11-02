@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import CodigoPregunta from "../componentes/CodigoPregunta";
+import DiagramaRed from "../componentes/DiagramaRed";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
 import { type ArchivoIndicadores, cargar, claveIndicador, type Indicador, type IndiceSeccion } from "../datos";
 import { SECCIONES } from "../rutas";
@@ -49,7 +50,7 @@ export default function Panorama() {
       </header>
 
       <div className="preguntas">
-        <a href="#transporte" className="pregunta">
+        <a href="#transporte" className="pregunta pregunta-p1">
           <CodigoPregunta codigo="P1" />
           <div className="pregunta-cuerpo">
             <h2>¿Qué tan cubierta está la ciudad por transporte público, y dónde se concentran los equipamientos?</h2>
@@ -57,7 +58,7 @@ export default function Panorama() {
             <span className="pregunta-accion">Ver cobertura de transporte</span>
           </div>
         </a>
-        <a href="#empleo" className="pregunta">
+        <a href="#empleo" className="pregunta pregunta-p2">
           <CodigoPregunta codigo="P2" />
           <div className="pregunta-cuerpo">
             <h2>¿Cómo se distribuye el empleo formal entre los distritos?</h2>
@@ -65,6 +66,14 @@ export default function Panorama() {
             <span className="pregunta-accion">Ver empleo por distrito</span>
           </div>
         </a>
+      </div>
+
+      <div className="panel panel-red">
+        <div className="panel-cabecera">
+          <h2>Recorre la ciudad por líneas</h2>
+          <span className="nota">Elige una estación</span>
+        </div>
+        <DiagramaRed />
       </div>
 
       <h2 className="subtitulo">Cifras clave</h2>
@@ -78,8 +87,8 @@ export default function Panorama() {
         <TarjetaIndicador titulo="Población (censo 2022)" indicador={busca("poblacion")} />
       </div>
       <p className="nota">
-        Pendientes para esta portada: estimación de población del IBGE (F08) y finanzas municipales (F04). Secciones
-        con datos: {listas} de {SECCIONES.length}.
+        Pendientes para esta portada: estimación de población del IBGE (F08) y finanzas municipales (F04). Secciones con
+        datos: {listas} de {SECCIONES.length}.
       </p>
     </section>
   );

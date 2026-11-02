@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import BotonTema from "./componentes/BotonTema";
 import { FuentesContexto } from "./componentes/contexto";
+import { useRevelar } from "./componentes/useRevelar";
 import { cargar, type Fuente } from "./datos";
+import { LineaContexto, lineaDe } from "./lineas";
 import { SECCIONES, useRuta } from "./rutas";
 import Fuentes from "./secciones/Fuentes";
 import NoCubrimos from "./secciones/NoCubrimos";
@@ -37,75 +39,93 @@ export default function App() {
   }, []);
 
   const seccion = SECCIONES.find((s) => s.id === ruta) ?? SECCIONES[0];
+  const linea = lineaDe(seccion.id);
+  useRevelar();
+
+  // La línea de la sección tiñe toda la página (variables en estilos.css, :root[data-linea]).
+  useEffect(() => {
+    document.documentElement.dataset.linea = seccion.id;
+  }, [seccion.id]);
 
   return (
     <TemaContexto.Provider value={tema}>
-      <FuentesContexto.Provider value={fuentes}>
-        <button type="button" className="saltar" onClick={irAlContenido}>
-          Saltar al contenido
-        </button>
-        <header className="cabecera">
-          <a href="#panorama" className="marca">
-            <span className="marca-punto" aria-hidden />
-            <span translate="no">São Paulo</span> <span className="marca-sub">gemelo digital</span>
-          </a>
-          <button
-            type="button"
-            className="boton-menu"
-            aria-expanded={menuAbierto}
-            aria-controls="navegacion"
-            aria-label="Secciones"
-            onClick={() => setMenuAbiertoEn(menuAbierto ? null : ruta)}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d={menuAbierto ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"} />
-            </svg>
+      <LineaContexto.Provider value={linea}>
+        <FuentesContexto.Provider value={fuentes}>
+          <button type="button" className="saltar" onClick={irAlContenido}>
+            Saltar al contenido
           </button>
-          <nav id="navegacion" className={menuAbierto ? "nav abierta" : "nav"}>
-            {SECCIONES.map((s) => (
-              <a key={s.id} href={`#${s.id}`} className={s.id === seccion.id ? "activa" : ""}>
-                {s.titulo}
-                {!s.lista && (
-                  <span className="nav-pendiente" title="En construcción">
-                    ·
-                  </span>
-                )}
-              </a>
-            ))}
-          </nav>
-          <BotonTema tema={tema} onAlternar={alternarTema} />
-        </header>
+          <header className="cabecera">
+            <a href="#panorama" className="marca">
+              <span className="marca-punto" aria-hidden />
+              <span translate="no">São Paulo</span> <span className="marca-sub">gemelo digital</span>
+            </a>
+            <button
+              type="button"
+              className="boton-menu"
+              aria-expanded={menuAbierto}
+              aria-controls="navegacion"
+              aria-label="Secciones"
+              onClick={() => setMenuAbiertoEn(menuAbierto ? null : ruta)}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d={menuAbierto ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"} />
+              </svg>
+            </button>
+            <nav id="navegacion" className={menuAbierto ? "nav abierta" : "nav"}>
+              {SECCIONES.map((s) => (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  className={s.id === seccion.id ? "activa" : ""}
+                  aria-current={s.id === seccion.id ? "page" : undefined}
+                  style={{ "--color-linea": lineaDe(s.id).color } as React.CSSProperties}
+                >
+                  <span className="nav-linea" aria-hidden />
+                  {s.titulo}
+                  {!s.lista && (
+                    <span className="nav-pendiente" title="En construcción">
+                      ·
+                    </span>
+                  )}
+                </a>
+              ))}
+            </nav>
+            <BotonTema tema={tema} onAlternar={alternarTema} />
+          </header>
 
-        <main id="contenido" className="contenido" tabIndex={-1}>
-          <Suspense fallback={<p className="nota">Cargando…</p>}>
-            {seccion.id === "panorama" && <Panorama />}
-            {seccion.id === "mapa" && <Mapa3D />}
-            {seccion.id === "empleo" && <Empleo />}
-            {seccion.id === "transporte" && <Transporte />}
-            {seccion.id === "gente" && <Gente />}
-            {seccion.id === "municipio" && <Municipio />}
-            {seccion.id === "ambiente" && <Ambiente />}
-            {seccion.id === "fuentes" && <Fuentes />}
-            {seccion.id === "no-cubrimos" && <NoCubrimos />}
-            {!seccion.lista && <Pendiente seccion={seccion} />}
-          </Suspense>
-        </main>
+          <main id="contenido" className="contenido" tabIndex={-1}>
+            <Suspense fallback={<p className="nota cargando-seccion">Cargando…</p>}>
+              <div key={seccion.id} className="entrada-seccion">
+                {seccion.id === "panorama" && <Panorama />}
+                {seccion.id === "mapa" && <Mapa3D />}
+                {seccion.id === "empleo" && <Empleo />}
+                {seccion.id === "transporte" && <Transporte />}
+                {seccion.id === "gente" && <Gente />}
+                {seccion.id === "municipio" && <Municipio />}
+                {seccion.id === "ambiente" && <Ambiente />}
+                {seccion.id === "fuentes" && <Fuentes />}
+                {seccion.id === "no-cubrimos" && <NoCubrimos />}
+                {!seccion.lista && <Pendiente seccion={seccion} />}
+              </div>
+            </Suspense>
+          </main>
 
-        <footer className="pie">
-          Datos: Prefeitura de São Paulo (GeoSampa, Infocidade), IBGE, SPTrans, RAIS, ABRASCE. Mapa base: OpenFreeMap, ©
-          colaboradores de OpenStreetMap. Foto de portada: Raphael Nogueira (Unsplash). Cada cifra muestra su fuente y
-          vigencia.
-        </footer>
-      </FuentesContexto.Provider>
+          <footer className="pie">
+            Datos: Prefeitura de São Paulo (GeoSampa, Infocidade), IBGE, SPTrans, RAIS, ABRASCE. Mapa base: OpenFreeMap,
+            © colaboradores de OpenStreetMap. Foto de portada: Raphael Nogueira (Unsplash). Cada cifra muestra su fuente
+            y vigencia.
+          </footer>
+        </FuentesContexto.Provider>
+      </LineaContexto.Provider>
     </TemaContexto.Provider>
   );
 }

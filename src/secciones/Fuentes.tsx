@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import { useFuentes } from "../componentes/contexto";
 import { type CampoDiccionario, cargar, type Fuente } from "../datos";
 
@@ -23,13 +24,12 @@ export default function Fuentes() {
 
   return (
     <section className="seccion">
-      <header className="seccion-cabecera">
-        <h1>De dónde sale cada cifra</h1>
+      <CabeceraSeccion seccion="fuentes" titulo="De dónde sale cada cifra">
         <p className="entrada">
           Generado desde el Excel del lago (hojas Fuentes y Diccionario). Los campos clasificados como «Sensible» no se
           publican en la app, o se publican solo como porcentaje.
         </p>
-      </header>
+      </CabeceraSeccion>
 
       <div className="resumen-estados">
         <span>{Object.keys(fuentes).length} fuentes</span>
@@ -85,7 +85,6 @@ export default function Fuentes() {
           GeoSampa; si una unidad no encuentra pareja, la verificación falla.
         </li>
         <li>Las filas «inválidos» y «no localizados» se conservan en el lago y se excluyen de mapas y rankings.</li>
-        <li>Correlación no es causalidad; los pesos del atlas son una decisión analítica.</li>
       </ul>
     </section>
   );

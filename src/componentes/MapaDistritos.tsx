@@ -1,20 +1,28 @@
 import type { FeatureCollection } from "geojson";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cargar, formatear, formatearCorto } from "../datos";
+import { type Rampa, useLinea } from "../lineas";
 import { type Tema, useTema } from "../tema";
 import { agregarMascara, estiloSaoPaulo, LIMITES_NAVEGACION, LIMITES_SP } from "./mapaBase";
 import { Map as MapaML, type MapLayerMouseEvent, NavigationControl, Popup } from "./maplibre";
 
-// Escala secuencial de un solo tono (azul) en 5 clases por cuantiles. El valor alto es siempre el
-// de más contraste con el fondo: en claro va de claro a oscuro y en oscuro al revés.
-const RAMPA_CLARA = ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"];
-
-const COLORES: Record<Tema, { rampa: string[]; sinDato: string; borde: string; seleccion: string }> = {
-  claro: { rampa: RAMPA_CLARA, sinDato: "#d9d8d4", borde: "#ffffff", seleccion: "#0b0b0b" },
-  oscuro: { rampa: [...RAMPA_CLARA].reverse(), sinDato: "#3a3a37", borde: "#121211", seleccion: "#ffffff" },
+// Escala secuencial de un solo tono en 5 clases por cuantiles, en el tono de la línea de la sección. El valor
+// alto es siempre el de más contraste con el fondo: en claro va de claro a oscuro y en oscuro al revés.
+const RAMPAS: Record<Rampa, string[]> = {
+  azul: ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"],
+  amarillo: ["#fdf1c2", "#f8d867", "#e2b100", "#a37a00", "#5c4400"],
+  rojo: ["#fcd9d6", "#f49b93", "#e2483c", "#a8241a", "#5e110b"],
+  verde: ["#cfeedf", "#84cfaa", "#2ea56b", "#147145", "#093d25"],
+  lila: ["#f0dcef", "#d29fd0", "#a8569f", "#76306f", "#43173f"],
+  plata: ["#e2e3e5", "#b7b9bd", "#8b8e94", "#5f6268", "#33363a"],
 };
 
-const NUMERO_CLASES = RAMPA_CLARA.length;
+const BASE: Record<Tema, { sinDato: string; borde: string; seleccion: string }> = {
+  claro: { sinDato: "#d9d8d4", borde: "#ffffff", seleccion: "#0b0b0b" },
+  oscuro: { sinDato: "#3a3a37", borde: "#121211", seleccion: "#ffffff" },
+};
+
+const NUMERO_CLASES = 5;
 
 // Capa y código de cada nivel; los distritos son el nivel por defecto.
 const CAPAS = {
@@ -54,7 +62,11 @@ function colorDeClase(rampa: string[], clase: number, totalClases: number): stri
 export default function MapaDistritos({ nivel = "distrito", valores, unidad, seleccionado, onSeleccionar }: Props) {
   const capa = CAPAS[nivel];
   const tema = useTema();
-  const colores = COLORES[tema];
+  const linea = useLinea();
+  const colores = useMemo(() => {
+    const rampa = RAMPAS[linea.rampa];
+    return { ...BASE[tema], rampa: tema === "claro" ? rampa : [...rampa].reverse() };
+  }, [tema, linea.rampa]);
   const contenedor = useRef<HTMLDivElement>(null);
   const [mapa, setMapa] = useState<MapaML | null>(null);
 
@@ -71,7 +83,7 @@ export default function MapaDistritos({ nivel = "distrito", valores, unidad, sel
   useEffect(() => {
     let creado: MapaML | null = null;
     let cancelado = false;
-    const { sinDato, borde, seleccion } = COLORES[tema];
+    const { sinDato, borde, seleccion } = BASE[tema];
 
     estiloSaoPaulo("plano", tema).then((estilo) => {
       if (cancelado) return;

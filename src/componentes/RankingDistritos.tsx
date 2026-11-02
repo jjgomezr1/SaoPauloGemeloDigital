@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatear, formatearCorto, type Indicador } from "../datos";
-import { EJE, ESTILO_TOOLTIP, SERIE_1 } from "./graficos";
+import { EJE, ESTILO_TOOLTIP, SERIE_1, SOBRE_SERIE } from "./graficos";
 
 interface Props {
   titulo: string;
@@ -89,7 +89,7 @@ export default function RankingDistritos({
                 dataKey="valor"
                 position="insideRight"
                 formatter={(v: unknown) => formatear(Number(v), unidad)}
-                style={{ fill: "#ffffff", fontSize: 11, fontWeight: 600 }}
+                style={{ fill: SOBRE_SERIE, fontSize: 11, fontWeight: 600 }}
               />
             </Bar>
           </BarChart>
