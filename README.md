@@ -99,9 +99,16 @@ subir `data/crudos.zip` a un release nuevo (`crudos-AAAA-MM-DD`) y cambiar `ETIQ
 
 El sistema visual toma la señalización del Metrô de São Paulo (detalle en el encabezado de
 `src/estilos.css`): fondo «concreto», recuadros planos sin bordes, cabecera como banda oscura de
-señalización, tipografía Archivo (ancha en títulos, condensada en rótulos) y color solo con significado:
-azul de la línea 1 para P1 y amarillo de la línea 4 para P2. Los filtros de cada sección viven en la URL
-(`#transporte?metrica=paradas_por_km2&distrito=96`), así que cualquier vista se puede compartir.
+señalización y tipografía Archivo (ancha en títulos, condensada en rótulos).
+
+Cada sección «viaja en una línea del Metrô» (`src/lineas.ts`): su color oficial tiñe la placa de la cabecera,
+el índice de capítulos, los gráficos y la rampa del mapa. Se mantiene la regla de color con significado —azul
+de la línea 1 para P1 y amarillo de la línea 4 para P2—, extendida al resto: Gente va en rojo, Ambiente en
+verde, Municipio en lila y Fuentes/«Lo que no cubrimos» en plata. `App.tsx` escribe la línea activa en
+`data-linea` y el CSS cambia las variables de color (`:root[data-linea="…"]` en «Líneas por sección»).
+
+Los filtros de cada sección viven en la URL (`#transporte?metrica=paradas_por_km2&distrito=96`), así que
+cualquier vista se puede compartir.
 
 ## Fotos
 
