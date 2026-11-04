@@ -2261,7 +2261,7 @@ fieldset {
   color: var(--seccion-texto);
 }
 
-/* --- Portada: las tres preguntas como placas de andén (franja de la línea, pregunta y flecha de dirección) --- */
+/* --- Portada: las tres preguntas como placas de andén (franja de la línea, pregunta y dirección) --- */
 .andenes {
   display: flex;
   flex-direction: column;
@@ -2292,13 +2292,11 @@ fieldset {
   background: var(--superficie);
   color: var(--texto);
   text-decoration: none;
-  transition:
-    transform 0.3s var(--facil),
-    box-shadow 0.3s var(--facil);
+  transition: box-shadow 0.25s var(--facil);
 }
+/* Al pasar, la placa no cambia de tamaño ni se mueve: solo gana sombra y se subraya el destino. */
 .anden:hover,
 .anden:focus-visible {
-  transform: translateY(-4px);
   box-shadow: var(--sombra-flotante);
 }
 /* La franja de la placa: de borde a borde, con el código en un círculo claro. */
@@ -2310,11 +2308,6 @@ fieldset {
   padding: 12px 22px;
   background: var(--color-linea);
   color: var(--sobre-color-linea);
-  transition: padding 0.3s var(--facil);
-}
-.anden:hover .anden-franja,
-.anden:focus-visible .anden-franja {
-  padding-block: 16px;
 }
 .anden-codigo {
   display: grid;
@@ -2341,23 +2334,13 @@ fieldset {
   font-size: 13px;
   color: var(--texto-tenue);
 }
-/* La dirección, abajo de todo: el destino y la flecha en un cuadro oscuro, como en la señalética. */
+/* La dirección, abajo de todo: hacia qué sección lleva la placa. */
 .anden-direccion {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--borde);
-}
-.anden-destino {
-  display: flex;
-  flex-direction: column;
-  font-size: 15px;
-  font-weight: 700;
-  font-stretch: 102%;
-  line-height: 1.25;
 }
 .anden-ir {
   font-size: 11px;
@@ -2367,27 +2350,20 @@ fieldset {
   text-transform: uppercase;
   color: var(--texto-tenue);
 }
-.anden-flecha {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  background: var(--senal);
-  color: var(--senal-texto);
-  font-size: 22px;
+.anden-destino {
+  font-size: 15px;
   font-weight: 700;
-  transition:
-    background-color 0.25s var(--facil),
-    color 0.25s var(--facil),
-    transform 0.25s var(--facil);
+  font-stretch: 102%;
+  line-height: 1.25;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s var(--facil);
 }
-.anden:hover .anden-flecha,
-.anden:focus-visible .anden-flecha {
-  background: var(--color-linea);
-  color: var(--sobre-color-linea);
-  transform: translateX(3px);
+.anden:hover .anden-destino,
+.anden:focus-visible .anden-destino {
+  text-decoration-color: var(--color-linea);
 }
 /* En pantallas angostas las placas se deslizan de lado; la siguiente asoma para que se note. */
 @media (max-width: 760px) {
@@ -2418,21 +2394,13 @@ fieldset {
   }
   .anden:hover,
   .anden:focus-visible {
-    transform: none;
     box-shadow: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .anden,
-  .anden-franja,
-  .anden-flecha {
+  .anden-destino {
     transition: none;
-  }
-  .anden:hover,
-  .anden:focus-visible,
-  .anden:hover .anden-flecha,
-  .anden:focus-visible .anden-flecha {
-    transform: none;
   }
 }
 

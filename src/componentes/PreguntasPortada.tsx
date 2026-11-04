@@ -2,8 +2,7 @@ import { LINEAS, type Linea } from "../lineas";
 import { SECCIONES } from "../rutas";
 
 // Las tres preguntas como placas de andén: arriba la franja del color de su línea del Metrô (P1 azul, P2 amarilla,
-// P3 coral) con el código de la pregunta, en medio la pregunta y abajo la flecha de dirección hacia la sección que la
-// responde. En pantallas angostas las placas se deslizan de lado.
+// P3 coral) con el código de la pregunta, en medio la pregunta y abajo la dirección: la sección que la responde. En pantallas angostas las placas se deslizan de lado.
 
 const PREGUNTAS: {
   codigo: "P1" | "P2" | "P3";
@@ -57,13 +56,8 @@ export default function PreguntasPortada() {
               <strong className="anden-pregunta">{p.titulo}</strong>
               <span className="anden-falta">Aún sin responder: {p.falta}</span>
               <span className="anden-direccion">
-                <span className="anden-destino">
-                  <span className="anden-ir">Ir a</span>
-                  {titulo(p.seccion)}
-                </span>
-                <span className="anden-flecha" aria-hidden>
-                  →
-                </span>
+                <span className="anden-ir">Ir a</span>
+                <span className="anden-destino">{titulo(p.seccion)}</span>
               </span>
             </a>
           </li>
