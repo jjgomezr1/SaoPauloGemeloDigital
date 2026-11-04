@@ -8,7 +8,7 @@ const SELECTOR = [
   ".capitulo > .rejilla-tarjetas > .tarjeta",
   ".seccion > .rejilla-tarjetas > .tarjeta",
   ".panel-red",
-  ".lista-vacios > div",
+  ".notas-seccion",
 ].join(",");
 
 /**

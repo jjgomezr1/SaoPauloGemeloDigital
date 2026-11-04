@@ -1,39 +1,33 @@
 import type { ReactNode } from "react";
-import { lineaDe } from "../lineas";
 import CodigoPregunta from "./CodigoPregunta";
 
 interface Props {
-  /** Id de la sección (rutas.ts): decide la línea del Metrô. */
+  /** Id de la sección (rutas.ts). El color lo pone App.tsx en :root[data-linea]. */
   seccion: string;
   titulo: string;
-  pregunta?: "P1" | "P2";
+  pregunta?: "P1" | "P2" | "P3";
   children?: ReactNode;
   /** Pieza visual propia de la sección, a la derecha del texto (abajo en móvil). */
   visual?: ReactNode;
+  /** Placa baja, para las secciones donde lo principal viene justo debajo (el mapa 3D). */
+  compacta?: boolean;
 }
 
 /**
- * Cabecera de sección como placa de estación: franja del color de la línea, círculo con el número y el
- * nombre de la línea. Cada sección tiene la suya y una pieza visual distinta al lado.
+ * Cabecera de sección. El color de la sección (su línea del Metrô) viene de estilos.css; el rótulo solo dice a
+ * qué pregunta responde, si responde a una. Cada sección tiene una pieza visual distinta al lado.
  */
-export default function CabeceraSeccion({ seccion, titulo, pregunta, children, visual }: Props) {
-  const linea = lineaDe(seccion);
+export default function CabeceraSeccion({ titulo, pregunta, children, visual, compacta }: Props) {
   return (
-    <header className={visual ? "placa con-visual" : "placa"}>
+    <header className={["placa", visual ? "con-visual" : "", compacta ? "compacta" : ""].join(" ").trim()}>
       <div className="placa-texto">
-        <p className="placa-rotulo">
-          <span className="placa-circulo" aria-hidden>
-            {linea.numero}
-          </span>
-          <span className="placa-linea">
-            Linha {linea.numero} · {linea.nombre}
-          </span>
-          {pregunta && (
+        {pregunta && (
+          <p className="placa-rotulo">
             <span className="placa-pregunta">
               <CodigoPregunta codigo={pregunta} /> Pregunta {pregunta.slice(1)}
             </span>
-          )}
-        </p>
+          </p>
+        )}
         <h1>{titulo}</h1>
         {children}
       </div>

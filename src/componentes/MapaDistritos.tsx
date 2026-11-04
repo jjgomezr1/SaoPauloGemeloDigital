@@ -14,6 +14,7 @@ const RAMPAS: Record<Rampa, string[]> = {
   rojo: ["#fcd9d6", "#f49b93", "#e2483c", "#a8241a", "#5e110b"],
   verde: ["#cfeedf", "#84cfaa", "#2ea56b", "#147145", "#093d25"],
   lila: ["#f0dcef", "#d29fd0", "#a8569f", "#76306f", "#43173f"],
+  coral: ["#fde0d6", "#f8a487", "#ec6a3f", "#b23f17", "#62210a"],
   plata: ["#e2e3e5", "#b7b9bd", "#8b8e94", "#5f6268", "#33363a"],
 };
 

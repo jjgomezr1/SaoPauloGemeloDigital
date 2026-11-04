@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import Crecimiento from "../componentes/Crecimiento";
 import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
 import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
+import { NotaMetodo } from "../componentes/notas";
 import RankingDistritos from "../componentes/RankingDistritos";
 import SelectorAnio from "../componentes/SelectorAnio";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
@@ -65,7 +66,6 @@ const CAPITULOS: Capitulo[] = [
 
 export default function Gente() {
   const [datos, setDatos] = useState<Indicador[]>([]);
-  const [area, setArea] = useState<Indicador[]>([]);
   const [historia, setHistoria] = useState<Indicador[]>([]);
   const [idh, setIdh] = useState<Indicador[]>([]);
   const [nacimientos, setNacimientos] = useState<Indicador[]>([]);
@@ -91,7 +91,6 @@ export default function Gente() {
     Promise.all([gente, transporte]).then(([g, t]) =>
       setDatos([...g.indicadores, ...t.indicadores.filter((i) => DE_TRANSPORTE.has(claveIndicador(i)))]),
     );
-    cargar<ArchivoIndicadores>("indicadores/gente/area_construida.json").then((a) => setArea(a.indicadores));
     cargar<ArchivoIndicadores>("indicadores/gente/poblacion_historica.json").then((a) => setHistoria(a.indicadores));
     cargar<ArchivoIndicadores>("indicadores/gente/idhm.json").then((a) => setIdh(a.indicadores));
     cargar<ArchivoIndicadores>("indicadores/gente/nacimientos.json").then((a) => setNacimientos(a.indicadores));
@@ -102,7 +101,6 @@ export default function Gente() {
   const territorio = distrito ?? "MSP";
   const busca = (clave: string) => datos.find((i) => i.codigo_territorio === territorio && claveIndicador(i) === clave);
   const nombreTerritorio = busca("poblacion")?.nombre_territorio ?? "Município de São Paulo";
-  const serieArea = area.map((i) => ({ anio: i.vigencia, valor: i.valor }));
 
   // Población histórica: un punto por censo; los censos no son anuales, así que el eje X es numérico.
   const censos = useMemo(
@@ -153,6 +151,10 @@ export default function Gente() {
       <Estaciones capitulos={CAPITULOS} />
 
       <SeccionCapitulo id="gente-donde">
+        <p className="porque">
+          <strong>Por qué importa:</strong> sin saber dónde vive la gente no se puede medir si el transporte y el empleo
+          llegan a ella. La población es el denominador de casi todas las cifras del sitio.
+        </p>
         <div className="filtros">
           <label>
             Indicador
@@ -191,25 +193,6 @@ export default function Gente() {
             onSeleccionar={setDistrito}
           />
         </div>
-
-        <div className="panel">
-          <h2>
-            Área construida residencial de la ciudad, {serieArea[0]?.anio}-{serieArea.at(-1)?.anio}
-          </h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={serieArea} margin={{ left: 8, right: 16, top: 8 }}>
-              <CartesianGrid vertical={false} stroke="var(--grilla)" />
-              <XAxis dataKey="anio" {...EJE} />
-              <YAxis tickFormatter={formatearCorto} width={60} unit=" km²" {...EJE} />
-              <Tooltip formatter={(v) => [`${formatear(Number(v))} km²`, "Área residencial"]} {...ESTILO_TOOLTIP} />
-              <Line dataKey="valor" stroke={SERIE_1} strokeWidth={2.5} dot={false} {...ANIMACION} />
-            </LineChart>
-          </ResponsiveContainer>
-          <p className="nota">
-            Fuente F28 (catastro del IPTU, Infocidade). Superficie construida de uso residencial registrada en enero de
-            cada año, para toda la ciudad: la fuente no la abre por distrito.
-          </p>
-        </div>
       </SeccionCapitulo>
 
       <SeccionCapitulo id="gente-crecimiento">
@@ -218,6 +201,10 @@ export default function Gente() {
           <p className="entrada">
             Población de cada censo desde 1872, que reúne la Prefeitura con datos del IBGE, para la ciudad, la Región
             Metropolitana, el Estado y Brasil.
+          </p>
+          <p className="porque">
+            <strong>Por qué importa:</strong> la ciudad se multiplicó por más de 300 en 150 años, más rápido que su
+            infraestructura. Esa escala explica buena parte de lo que muestran las demás secciones.
           </p>
         </header>
 
@@ -285,6 +272,10 @@ export default function Gente() {
             Índice de Desarrollo Humano Municipal (IDHM) de cada subprefeitura, con la dimensión de ingreso. Haz clic en
             una subprefeitura para ver sus cifras.
           </p>
+          <p className="porque">
+            <strong>Por qué importa:</strong> las zonas con menor IDHM suelen ser las más lejanas del empleo y del
+            metro. El índice ayuda a leer los mapas de Empleo y Transporte.
+          </p>
         </header>
 
         <SelectorAnio etiqueta="Año del censo" anios={ANIOS_IDH} valor={anioIdh} onCambiar={setAnioIdh} />
@@ -335,11 +326,11 @@ export default function Gente() {
           />
         </div>
 
-        <aside className="limitacion">
-          <strong>Antes de usar el IDHM:</strong> son cifras de los censos de 2000 y 2010, así que no muestran cómo está
-          cada zona hoy. La fuente trae 31 prefeituras regionales: Sapopemba, que desde 2013 es una subprefeitura
-          aparte, está dentro de Vila Prudente y aparece sin dato en el mapa.
-        </aside>
+        <NotaMetodo titulo="IDHM">
+          Son cifras de los censos de 2000 y 2010, así que no muestran cómo está cada zona hoy. La fuente trae 31
+          prefeituras regionales: Sapopemba, que desde 2013 es una subprefeitura aparte, está dentro de Vila Prudente y
+          aparece sin dato en el mapa.
+        </NotaMetodo>
       </SeccionCapitulo>
 
       <SeccionCapitulo id="gente-nacimientos">
@@ -348,6 +339,10 @@ export default function Gente() {
           <p className="entrada">
             Nacidos vivos por distrito y año, del Sistema de Información sobre Nacidos Vivos (SINASC) de la Secretaría
             de Salud, y su tasa por mil habitantes. Haz clic en un distrito para ver sus cifras.
+          </p>
+          <p className="porque">
+            <strong>Por qué importa:</strong> anticipa dónde hará falta más educación infantil y salud en los próximos
+            años.
           </p>
         </header>
 
@@ -410,18 +405,16 @@ export default function Gente() {
           />
         </div>
 
-        <aside className="limitacion">
-          <strong>Antes de comparar años:</strong> en 2024 y 2025 una parte de los nacimientos viene sin distrito (la
-          tarjeta «Sin distrito conocido» da el porcentaje del año elegido), así que las cifras por distrito de esos
-          años quedan por debajo de lo real y no se pueden comparar con 2023. La fuente también separa los partos
-          vaginales y por cesárea, pero ese dato es Sensible en el Diccionario y el sitio publica solo el total.
-        </aside>
+        <NotaMetodo titulo="Nacimientos">
+          En 2024 y 2025 una parte de los nacimientos viene sin distrito (la tarjeta «Sin distrito conocido» da el
+          porcentaje del año elegido), así que las cifras por distrito de esos años quedan por debajo de lo real y no se
+          comparan con 2023. El tipo de parto es Sensible en el Diccionario: el sitio publica solo el total.
+        </NotaMetodo>
       </SeccionCapitulo>
 
-      <aside className="limitacion">
-        <strong>Lo que esta sección no muestra:</strong> el índice de vulnerabilidad del censo (F41) es Sensible y no se
-        publica. Los domicilios de una favela que cruza el límite entre distritos se reparten según el área.
-      </aside>
+      <NotaMetodo titulo="Favelas">
+        Los domicilios de una favela que cruza el límite entre distritos se reparten según el área.
+      </NotaMetodo>
     </section>
   );
 }

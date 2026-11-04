@@ -1,13 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import { useFuentes } from "../componentes/contexto";
-import { type CampoDiccionario, cargar, type Fuente } from "../datos";
+import { type CampoDiccionario, cargar, type EstadoSitio, type Fuente } from "../datos";
+import { useParametro } from "../rutas";
+
+const ESTADOS: EstadoSitio[] = ["En el sitio", "Solo en el lago", "No integrada", "Descartada"];
+const RESUMEN: Record<EstadoSitio, string> = {
+  "En el sitio": "en el sitio",
+  "Solo en el lago": "solo en el lago",
+  "No integrada": "no integradas",
+  Descartada: "descartadas",
+};
+const CLASE_ESTADO: Record<EstadoSitio, string> = {
+  "En el sitio": "integrada",
+  "Solo en el lago": "lago",
+  "No integrada": "candidata",
+  Descartada: "descartada",
+};
 
 export default function Fuentes() {
   const fuentes = useFuentes();
   const [diccionario, setDiccionario] = useState<CampoDiccionario[]>([]);
   const [abierta, setAbierta] = useState<string | null>(null);
   const [filtro, setFiltro] = useState("");
+  // El estado elegido vive en la URL (#fuentes?estado=No integrada), como los filtros de las demás secciones.
+  const [estadoUrl, setEstado] = useParametro("estado");
+  const estado = ESTADOS.find((e) => e === estadoUrl) ?? null;
 
   useEffect(() => {
     cargar<CampoDiccionario[]>("catalogo/diccionario.json").then(setDiccionario);
@@ -16,27 +34,35 @@ export default function Fuentes() {
   const lista = useMemo(() => {
     const t = filtro.trim().toLowerCase();
     return Object.values(fuentes).filter(
-      (f) => !t || `${f.fuente_id} ${f.nombre} ${f.entidad} ${f.estado}`.toLowerCase().includes(t),
+      (f) =>
+        (!estado || f.estado_sitio === estado) &&
+        (!t || `${f.fuente_id} ${f.nombre} ${f.entidad} ${f.estado_sitio}`.toLowerCase().includes(t)),
     );
-  }, [fuentes, filtro]);
+  }, [fuentes, filtro, estado]);
 
-  const conteo = (estado: string) => Object.values(fuentes).filter((f) => f.estado === estado).length;
+  const conteo = (estado: EstadoSitio) => Object.values(fuentes).filter((f) => f.estado_sitio === estado).length;
 
   return (
     <section className="seccion">
       <CabeceraSeccion seccion="fuentes" titulo="De dónde sale cada cifra">
         <p className="entrada">
-          Generado desde el Excel del lago (hojas Fuentes y Diccionario). Los campos clasificados como «Sensible» no se
-          publican en la app, o se publican solo como porcentaje.
+          Generado desde el Excel del lago (hojas Fuentes y Diccionario). El estado de cada fuente sale de lo que el
+          sitio publica de verdad. Los campos clasificados como «Sensible» no se publican, o se publican solo como
+          porcentaje.
         </p>
       </CabeceraSeccion>
 
-      <div className="resumen-estados">
-        <span>{Object.keys(fuentes).length} fuentes</span>
-        <span>{conteo("Integrada al lago")} integradas</span>
-        <span>{conteo("Candidata")} candidatas</span>
-        <span>{conteo("Descartada")} descartadas</span>
-      </div>
+      <fieldset className="resumen-estados">
+        <legend className="solo-lector">Filtrar por estado</legend>
+        <button type="button" aria-pressed={!estado} onClick={() => setEstado(null)}>
+          {Object.keys(fuentes).length} fuentes
+        </button>
+        {ESTADOS.map((e) => (
+          <button key={e} type="button" aria-pressed={estado === e} onClick={() => setEstado(estado === e ? null : e)}>
+            {conteo(e)} {RESUMEN[e]}
+          </button>
+        ))}
+      </fieldset>
 
       <div className="filtros">
         <label>
@@ -101,8 +127,6 @@ function FilaFuente({
   abierta: boolean;
   alternar: () => void;
 }) {
-  const claseEstado =
-    fuente.estado === "Integrada al lago" ? "integrada" : fuente.estado === "Descartada" ? "descartada" : "candidata";
   return (
     <>
       <tr>
@@ -124,7 +148,10 @@ function FilaFuente({
         <td>{fuente.periodo}</td>
         <td className="licencia">{fuente.licencia}</td>
         <td>
-          <span className={`etiqueta estado-${claseEstado}`}>{fuente.estado}</span>
+          <span className={`etiqueta estado-${CLASE_ESTADO[fuente.estado_sitio] ?? "candidata"}`}>
+            {fuente.estado_sitio}
+          </span>
+          {fuente.motivo && <p className="motivo">{fuente.motivo}</p>}
         </td>
       </tr>
       {abierta && (

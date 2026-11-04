@@ -8,13 +8,13 @@ export interface Seccion {
   lista: boolean;
 }
 
-// Secciones de la v1 (sección 8 del plan). «lista» indica si ya tiene datos en public/data/.
+// Secciones del sitio, con las preguntas primero (P1, P2, P3). «lista» indica si ya tiene datos en public/data/.
 export const SECCIONES: Seccion[] = [
   {
     id: "panorama",
     titulo: "Panorama",
-    resumen: "Cifras clave de la ciudad y acceso a las dos preguntas.",
-    fuentes: ["F08", "F04", "F05", "F11", "F12"],
+    resumen: "Cifras clave de la ciudad y acceso a las tres preguntas.",
+    fuentes: ["F41", "F30", "F36", "F12"],
     lista: true,
   },
   {
@@ -25,13 +25,6 @@ export const SECCIONES: Seccion[] = [
     lista: true,
   },
   {
-    id: "empleo",
-    titulo: "Empleo",
-    resumen: "P2 · Establecimientos y empleos formales por distrito, por sexo y por raza o color.",
-    fuentes: ["F11", "F12", "F13", "F14", "F15", "F16", "F17"],
-    lista: true,
-  },
-  {
     id: "transporte",
     titulo: "Transporte y equipamientos",
     resumen: "P1 · Cobertura de transporte, pasajeros por línea, escuelas, deporte, ferias y shoppings.",
@@ -39,11 +32,25 @@ export const SECCIONES: Seccion[] = [
     lista: true,
   },
   {
+    id: "invertir",
+    titulo: "Invertir",
+    resumen:
+      "P2 · Dónde conviene montar un negocio: clientes, competencia y transporte por distrito, y el empleo formal.",
+    fuentes: ["F11", "F12", "F13", "F14", "F15", "F41", "F30", "F36"],
+    lista: true,
+  },
+  {
+    id: "equidad",
+    titulo: "Equidad",
+    resumen: "P3 · Si los distritos con más favelas reciben menos transporte, escuelas, deporte y empleo.",
+    fuentes: ["F32", "F41", "F30", "F36", "F39", "F40", "F33", "F12", "F16", "F17"],
+    lista: true,
+  },
+  {
     id: "gente",
     titulo: "Gente",
-    resumen:
-      "Población y densidad por distrito, población desde 1872, IDH municipal, nacimientos, favelas y área construida residencial.",
-    fuentes: ["F41", "F01", "F07", "F18", "F19", "F20", "F32", "F28"],
+    resumen: "Población y densidad por distrito, población desde 1872, IDH municipal, nacimientos y favelas.",
+    fuentes: ["F41", "F01", "F07", "F18", "F19", "F20", "F32"],
     lista: true,
   },
   {
@@ -67,13 +74,6 @@ export const SECCIONES: Seccion[] = [
     fuentes: [],
     lista: true,
   },
-  {
-    id: "no-cubrimos",
-    titulo: "Lo que no cubrimos",
-    resumen: "Lo que el lago no permite responder todavía.",
-    fuentes: [],
-    lista: true,
-  },
 ];
 
 // El hash lleva la sección y, después de «?», el estado de sus filtros:
@@ -82,7 +82,8 @@ const EVENTO_PARAMETROS = "parametros-url";
 
 function partesHash(): [string, URLSearchParams] {
   const [ruta, consulta = ""] = window.location.hash.replace(/^#\/?/, "").split("?");
-  return [ruta || "panorama", new URLSearchParams(consulta)];
+  // «empleo» fue la sección de P2 hasta que la pregunta pasó a ser «dónde invertir»: sus enlaces siguen sirviendo.
+  return [ruta === "empleo" ? "invertir" : ruta || "panorama", new URLSearchParams(consulta)];
 }
 
 export function useRuta(): string {

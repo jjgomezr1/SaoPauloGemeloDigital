@@ -1,19 +1,21 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import BotonTema from "./componentes/BotonTema";
 import { FuentesContexto } from "./componentes/contexto";
+import Logo from "./componentes/Logo";
+import { NotasProveedor, NotasSeccion } from "./componentes/notas";
 import { useRevelar } from "./componentes/useRevelar";
 import { cargar, type Fuente } from "./datos";
 import { LineaContexto, lineaDe } from "./lineas";
 import { SECCIONES, useRuta } from "./rutas";
 import Fuentes from "./secciones/Fuentes";
-import NoCubrimos from "./secciones/NoCubrimos";
 import Panorama from "./secciones/Panorama";
 import Pendiente from "./secciones/Pendiente";
 import { TemaContexto, useTemaRaiz } from "./tema";
 
 // MapLibre y Recharts pesan: solo se bajan al abrir una sección que los usa.
 const Ambiente = lazy(() => import("./secciones/Ambiente"));
-const Empleo = lazy(() => import("./secciones/Empleo"));
+const Equidad = lazy(() => import("./secciones/Equidad"));
+const Invertir = lazy(() => import("./secciones/Invertir"));
 const Gente = lazy(() => import("./secciones/Gente"));
 const Mapa3D = lazy(() => import("./secciones/Mapa3D"));
 const Municipio = lazy(() => import("./secciones/Municipio"));
@@ -56,8 +58,11 @@ export default function App() {
           </button>
           <header className="cabecera">
             <a href="#panorama" className="marca">
-              <span className="marca-punto" aria-hidden />
-              <span translate="no">São Paulo</span> <span className="marca-sub">gemelo digital</span>
+              <Logo />
+              <span className="marca-texto">
+                <span translate="no">São Paulo</span>
+                <span className="marca-sub">gemelo digital</span>
+              </span>
             </a>
             <button
               type="button"
@@ -87,9 +92,13 @@ export default function App() {
                   href={`#${s.id}`}
                   className={s.id === seccion.id ? "activa" : ""}
                   aria-current={s.id === seccion.id ? "page" : undefined}
-                  style={{ "--color-linea": lineaDe(s.id).color } as React.CSSProperties}
+                  style={
+                    {
+                      "--color-linea": lineaDe(s.id).color,
+                      "--sobre-color-linea": lineaDe(s.id).sobre,
+                    } as React.CSSProperties
+                  }
                 >
-                  <span className="nav-linea" aria-hidden />
                   {s.titulo}
                   {!s.lista && (
                     <span className="nav-pendiente" title="En construcción">
@@ -104,25 +113,34 @@ export default function App() {
 
           <main id="contenido" className="contenido" tabIndex={-1}>
             <Suspense fallback={<p className="nota cargando-seccion">Cargando…</p>}>
-              <div key={seccion.id} className="entrada-seccion">
-                {seccion.id === "panorama" && <Panorama />}
-                {seccion.id === "mapa" && <Mapa3D />}
-                {seccion.id === "empleo" && <Empleo />}
-                {seccion.id === "transporte" && <Transporte />}
-                {seccion.id === "gente" && <Gente />}
-                {seccion.id === "municipio" && <Municipio />}
-                {seccion.id === "ambiente" && <Ambiente />}
-                {seccion.id === "fuentes" && <Fuentes />}
-                {seccion.id === "no-cubrimos" && <NoCubrimos />}
-                {!seccion.lista && <Pendiente seccion={seccion} />}
-              </div>
+              <NotasProveedor key={seccion.id}>
+                <div className="entrada-seccion">
+                  {seccion.id === "panorama" && <Panorama />}
+                  {seccion.id === "mapa" && <Mapa3D />}
+                  {seccion.id === "invertir" && <Invertir />}
+                  {seccion.id === "equidad" && <Equidad />}
+                  {seccion.id === "transporte" && <Transporte />}
+                  {seccion.id === "gente" && <Gente />}
+                  {seccion.id === "municipio" && <Municipio />}
+                  {seccion.id === "ambiente" && <Ambiente />}
+                  {seccion.id === "fuentes" && <Fuentes />}
+                  {!seccion.lista && <Pendiente seccion={seccion} />}
+                </div>
+                <NotasSeccion fuentesSeccion={seccion.fuentes} />
+              </NotasProveedor>
             </Suspense>
           </main>
 
           <footer className="pie">
-            Datos: Prefeitura de São Paulo (GeoSampa, Infocidade), IBGE, SPTrans, RAIS, ABRASCE. Mapa base: OpenFreeMap,
-            © colaboradores de OpenStreetMap. Foto de portada: Raphael Nogueira (Unsplash). Cada cifra muestra su fuente
-            y vigencia.
+            <p className="pie-equipo">
+              Hecho por Samuel Herrera Hoyos, Samuel Henao Castrillón, Juan José Gómez Ramírez y Juan Carlos Fernández
+              Vanoy · Gestión y Gobernanza, EAFIT
+            </p>
+            <p>
+              Datos: Prefeitura de São Paulo (GeoSampa, Infocidade), IBGE, SPTrans, RAIS, ABRASCE. Mapa base:
+              OpenFreeMap, © colaboradores de OpenStreetMap. Foto de portada: Raphael Nogueira (Unsplash). La fuente y
+              la vigencia de cada cifra están en las notas del final de cada sección.
+            </p>
           </footer>
         </FuentesContexto.Provider>
       </LineaContexto.Provider>

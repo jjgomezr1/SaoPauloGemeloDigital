@@ -4,7 +4,7 @@ import { createContext, useContext } from "react";
 // y la navegación. Se mantiene la regla del sistema visual: color con significado (P1 azul, P2 amarillo).
 // Las variables CSS de cada línea están en estilos.css, bajo :root[data-linea="…"].
 
-export type Rampa = "azul" | "amarillo" | "rojo" | "verde" | "lila" | "plata";
+export type Rampa = "azul" | "amarillo" | "rojo" | "verde" | "lila" | "coral" | "plata";
 
 export interface Linea {
   /** Número de la línea, como en el círculo de las placas. */
@@ -24,6 +24,8 @@ export const LINEAS: Record<string, Linea> = {
   roja: { numero: "3", nombre: "Vermelha", color: "#ee372f", sobre: "#ffffff", rampa: "rojo" },
   amarilla: { numero: "4", nombre: "Amarela", color: "#fed304", sobre: "#1f2428", rampa: "amarillo" },
   lila: { numero: "5", nombre: "Lilás", color: "#9b3894", sobre: "#ffffff", rampa: "lila" },
+  // Línea 11 de la CPTM: P3 necesitaba un color propio que no se confundiera con los de Gente o Municipio.
+  coral: { numero: "11", nombre: "Coral", color: "#f04e23", sobre: "#1f2428", rampa: "coral" },
   plata: { numero: "15", nombre: "Prata", color: "#9ea0a4", sobre: "#1f2428", rampa: "plata" },
 };
 
@@ -32,12 +34,12 @@ export const LINEA_DE_SECCION: Record<string, keyof typeof LINEAS> = {
   panorama: "azul",
   mapa: "azul",
   transporte: "azul",
-  empleo: "amarilla",
+  invertir: "amarilla",
+  equidad: "coral",
   gente: "roja",
   ambiente: "verde",
   municipio: "lila",
   fuentes: "plata",
-  "no-cubrimos": "plata",
 };
 
 export function lineaDe(seccion: string): Linea {

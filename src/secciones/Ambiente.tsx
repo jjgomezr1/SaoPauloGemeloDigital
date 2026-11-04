@@ -15,6 +15,7 @@ import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estac
 import FranjasClima from "../componentes/FranjasClima";
 import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
+import { NotaMetodo } from "../componentes/notas";
 import RankingDistritos from "../componentes/RankingDistritos";
 import SelectorAnio from "../componentes/SelectorAnio";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
@@ -128,6 +129,10 @@ export default function Ambiente() {
 
       <SeccionCapitulo id="ambiente-verde">
         <h2 className="titulo-capitulo">¿Cuánto verde tiene cada zona?</h2>
+        <p className="porque">
+          <strong>Por qué importa:</strong> el verde es un equipamiento más: marca la calidad de vida de cada zona y,
+          junto con la densidad, dónde falta espacio público.
+        </p>
         <SelectorAnio etiqueta="Año del mapeo" anios={ANIOS} valor={anio} onCambiar={setAnio} />
 
         <div className="filtros">
@@ -180,11 +185,10 @@ export default function Ambiente() {
           />
         </div>
 
-        <aside className="limitacion">
-          <strong>Antes de comparar años:</strong> 2010 se midió con imágenes del satélite SPOT, 2015 con RapidEye y
-          2020 con fotos aéreas de 2017-2018 apoyadas en LiDAR. Las diferencias entre años son sobre todo de método, por
-          eso la sección muestra un año a la vez.
-        </aside>
+        <NotaMetodo titulo="Vegetación entre años">
+          2010 se midió con imágenes del satélite SPOT, 2015 con RapidEye y 2020 con fotos aéreas de 2017-2018 apoyadas
+          en LiDAR. Las diferencias entre años son sobre todo de método, por eso la sección muestra un año a la vez.
+        </NotaMetodo>
       </SeccionCapitulo>
 
       <SeccionCapitulo id="ambiente-temperatura">
@@ -193,6 +197,10 @@ export default function Ambiente() {
           <p className="entrada">
             Promedio mensual de las temperaturas mínimas del aire, de 1933 a 2025, que publica la Prefeitura con datos
             del Instituto Astronômico e Geofísico de la USP. Se compara cada año con la normal {NORMAL}.
+          </p>
+          <p className="porque">
+            <strong>Por qué importa:</strong> noches cada vez menos frías son la señal más directa del calentamiento de
+            la ciudad, que afecta la salud y el confort de quien vive y se mueve en ella.
           </p>
         </header>
 
@@ -268,12 +276,11 @@ export default function Ambiente() {
           </div>
         </div>
 
-        <aside className="limitacion">
-          <strong>Una cifra para toda la ciudad:</strong> la temperatura no se mide por lugar, barrio ni zona, así que
-          no hay mapa de temperatura. Es una cifra general para São Paulo, medida en una estación meteorológica. Las
-          normales y los promedios anuales se calculan de los doce meses de cada año. En 2025 los meses vienen
+        <NotaMetodo titulo="Temperatura">
+          Es una cifra para toda la ciudad, medida en una sola estación meteorológica (IAG, Água Funda): por eso no hay
+          mapa. Las normales y los promedios anuales se calculan de los doce meses de cada año. En 2025 los meses vienen
           redondeados a un decimal.
-        </aside>
+        </NotaMetodo>
       </SeccionCapitulo>
     </section>
   );

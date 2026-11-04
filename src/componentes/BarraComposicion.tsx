@@ -1,6 +1,8 @@
 export interface Segmento {
   etiqueta: string;
   valor: number;
+  /** Color propio del segmento; sin él, sale un tono de la línea de la sección. */
+  color?: string;
 }
 
 interface Props {
@@ -39,7 +41,7 @@ export default function BarraComposicion({ segmentos, formato, descripcion, sonP
         {orden.map((s, i) => (
           <span
             key={s.etiqueta}
-            style={{ flexGrow: s.valor, background: tono(i), animationDelay: `${i * 60}ms` }}
+            style={{ flexGrow: s.valor, background: s.color ?? tono(i), animationDelay: `${i * 60}ms` }}
             title={`${s.etiqueta}: ${fmtPct.format((100 * s.valor) / total)} %`}
           />
         ))}
@@ -47,7 +49,7 @@ export default function BarraComposicion({ segmentos, formato, descripcion, sonP
       <ul className="composicion-leyenda">
         {orden.map((s, i) => (
           <li key={s.etiqueta}>
-            <span className="muestra" style={{ background: tono(i) }} />
+            <span className="muestra" style={{ background: s.color ?? tono(i) }} />
             <span className="composicion-etiqueta">{s.etiqueta}</span>
             <span className="composicion-pct">{fmtPct.format((100 * s.valor) / total)} %</span>
             {formato && <span className="composicion-valor">{formato(s.valor)}</span>}

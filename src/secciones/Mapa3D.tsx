@@ -270,7 +270,6 @@ const CAPAS: Capa[] = [
     capas: [{ id: "subprefeituras", type: "line", paint: { "line-color": "#6250d6", "line-width": 2.2 } }],
   },
 ];
-const CAPAS_PENDIENTES = ["Estaciones de tren CPTM (no están en el catálogo)", "Densidad por sector censal (F41)"];
 const INICIALES: Record<string, boolean> = { sitios: true, metro: true, tren: true, estaciones: true };
 
 function circulo(color: string, radio = 4) {
@@ -309,36 +308,14 @@ const COLOR_BORDE_MUNICIPIO = { claro: "#52514e", oscuro: "#c3c2b7" };
 const CAMARA_INICIAL: CameraOptions = { center: [-46.6555, -23.5613], zoom: 14.2, pitch: 60, bearing: -20 };
 const ZOOM_MINIMO = 9;
 
-// Animación de entrada: se ve el planeta y la cámara baja hasta la vista inicial. Solo la primera vez de
-// cada sesión del navegador, y no si el sistema pide reducir el movimiento. Mientras dura, el mapa es un
+// Animación de entrada: se ve el planeta y la cámara baja hasta la vista inicial. Corre cada vez que se entra
+// a la sección (no al cambiar de tema), y no si el sistema pide reducir el movimiento. Mientras dura, el mapa es un
 // globo sin límites de cámara; al terminar vuelve al mapa de siempre.
 const DURACION_INTRO_MS = 5000;
 const CAMARA_PLANETA: CameraOptions = { center: [30, 20], zoom: 1.2, pitch: 0, bearing: 0 };
 const CAPA_TIERRA = "tierra";
 // Silueta de los continentes (Natural Earth, dominio público) sobre el color de fondo del estilo.
 const COLOR_TIERRA: Record<Tema, string> = { claro: "#bdbcb2", oscuro: "#3f3f3a" };
-const CLAVE_INTRO = "mapa3d-intro-vista";
-// Respaldo si el navegador no deja usar sessionStorage.
-let introVista = false;
-
-function debeReproducirIntro(): boolean {
-  if (introVista || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-  try {
-    return sessionStorage.getItem(CLAVE_INTRO) === null;
-  } catch {
-    return true;
-  }
-}
-
-function marcarIntroVista() {
-  introVista = true;
-  try {
-    sessionStorage.setItem(CLAVE_INTRO, "1");
-  } catch {
-    // Sin almacenamiento solo queda el respaldo en memoria.
-  }
-}
-
 /** La silueta de los continentes; si no baja, la animación sigue sin ella. */
 function cargarTierra(): Promise<FeatureCollection | null> {
   return fetch(`${import.meta.env.BASE_URL}mapa/tierra.geojson`)
@@ -527,6 +504,8 @@ export default function Mapa3D() {
   // La animación de entrada: mientras corre se muestra «Saltar», que la termina en la vista inicial.
   const [introActiva, setIntroActiva] = useState(false);
   const terminarIntro = useRef<(() => void) | null>(null);
+  // Una vez por entrada a la sección: al recrear el mapa por un cambio de tema no se repite.
+  const introPendiente = useRef(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   // Celdas ya bajadas por capa. Se vacía al recrear el mapa, porque las fuentes se pierden.
   const celdas = useRef(new Map<string, { cargadas: Set<string>; features: Feature[] }>());
 
@@ -539,8 +518,8 @@ export default function Mapa3D() {
       if (cancelado) return;
       // La animación solo corre al crear el mapa por primera vez en la sesión: un cambio de tema lo recrea
       // en la posición donde estaba y no la repite.
-      const intro = debeReproducirIntro();
-      if (intro) marcarIntroVista();
+      const intro = introPendiente.current;
+      introPendiente.current = false;
       const tierra = intro ? cargarTierra() : null;
       const m = new MapaML({
         container: contenedor.current!,
@@ -675,7 +654,7 @@ export default function Mapa3D() {
 
   return (
     <section className="seccion">
-      <CabeceraSeccion seccion="mapa" titulo="La ciudad en tres dimensiones">
+      <CabeceraSeccion seccion="mapa" titulo="La ciudad en tres dimensiones" compacta>
         <p className="entrada">
           Edificios de OpenStreetMap extruidos sobre el mapa base de OpenFreeMap, con las capas oficiales de GeoSampa
           encima. Arrastra con clic derecho (o dos dedos) para inclinar y girar; haz clic en una línea, estación o
@@ -729,12 +708,6 @@ export default function Mapa3D() {
               ))}
             </ul>
           )}
-          <p className="capas-pendientes-titulo">Próximas capas</p>
-          <ul className="capas-pendientes">
-            {CAPAS_PENDIENTES.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
         </div>
       </div>
       <details className="creditos-fotos">

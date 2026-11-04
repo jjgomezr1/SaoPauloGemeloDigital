@@ -10,7 +10,9 @@ export type Nivel =
   | "linea"
   | "pais"
   | "estado"
-  | "region_metropolitana";
+  | "region_metropolitana"
+  // Grupos de distritos (P3: los de más y menos domicilios en favelas).
+  | "grupo";
 
 export interface Indicador {
   id: string;
@@ -53,9 +55,16 @@ export interface Fuente {
   periodo: string;
   frecuencia: string;
   fecha_prueba: string;
+  /** Estado en el Excel del catálogo. */
   estado: string;
+  /** Estado en el sitio, calculado por build_web.py a partir de lo publicado. */
+  estado_sitio: EstadoSitio;
+  /** Por qué no se publica (vacío si se publica). */
+  motivo: string;
   observaciones: string;
 }
+
+export type EstadoSitio = "En el sitio" | "Solo en el lago" | "No integrada" | "Descartada";
 
 export interface CampoDiccionario {
   fuente_id: string;

@@ -1,13 +1,6 @@
 import { formatear, type Indicador } from "../datos";
-import { useFuentes } from "./contexto";
+import { ETIQUETA_TIPO, ReferenciaNota, useNotaTarjeta } from "./notas";
 import { useContador } from "./useContador";
-
-const ETIQUETA_TIPO: Record<Indicador["tipo"], string> = {
-  observado: "Observado",
-  estimado: "Estimado",
-  proxy: "Proxy",
-  declarado: "Declarado",
-};
 
 /** «Paradas» sale en minúscula junto a la cifra; los grados («°C») se dejan como vienen. */
 function unidadVisible(unidad: string): string {
@@ -20,10 +13,13 @@ interface Props {
   destacado?: boolean;
 }
 
-/** La tarjeta siempre muestra: cifra, unidad, fuente (ID y entidad), vigencia, tipo y advertencia. */
+/**
+ * La tarjeta muestra la cifra, su unidad y su territorio. La fuente, la vigencia, el tipo, el cálculo y la
+ * advertencia van al bloque «Fuentes y notas» del final de la sección (notas.tsx), con el número de la tarjeta.
+ */
 export default function TarjetaIndicador({ titulo, indicador, destacado }: Props) {
-  const fuentes = useFuentes();
   const animado = useContador(indicador?.valor ?? null);
+  const numero = useNotaTarjeta(titulo, indicador);
   if (!indicador) {
     return (
       <article className="tarjeta cargando" aria-busy>
@@ -32,43 +28,25 @@ export default function TarjetaIndicador({ titulo, indicador, destacado }: Props
       </article>
     );
   }
-  const fuente = fuentes[indicador.fuente_id];
   return (
     <article className={destacado ? "tarjeta tarjeta-destacada" : "tarjeta"}>
-      <h3>{titulo}</h3>
+      <h3>
+        {titulo}
+        <ReferenciaNota numero={numero} />
+      </h3>
       <p className={destacado ? "cifra cifra-destacada" : "cifra"}>
         {/* La cifra animada se oculta a los lectores de pantalla, que leen solo la final. */}
         <span aria-hidden>{formatear(animado, indicador.unidad)}</span>
         <span className="solo-lector">{formatear(indicador.valor, indicador.unidad)}</span>
         {!indicador.unidad.startsWith("%") && <span className="unidad"> {unidadVisible(indicador.unidad)}</span>}
       </p>
-      <p className="territorio">{indicador.nombre_territorio}</p>
-      <dl className="metadatos">
-        <div>
-          <dt>Fuente</dt>
-          <dd>
-            {indicador.fuente_id}
-            {fuente ? `, ${fuente.entidad}` : ""}
-            {indicador.fuentes_adicionales?.length ? ` + ${indicador.fuentes_adicionales.join(", ")}` : ""}
-          </dd>
-        </div>
-        <div>
-          <dt>Vigencia</dt>
-          <dd>{indicador.vigencia}</dd>
-        </div>
-        <div>
-          <dt>Tipo</dt>
-          <dd>
-            <span className={`etiqueta tipo-${indicador.tipo}`}>{ETIQUETA_TIPO[indicador.tipo]}</span>
-          </dd>
-        </div>
-      </dl>
-      {indicador.calculo && <p className="calculo">Cálculo: {indicador.calculo}</p>}
-      {indicador.advertencia && (
-        <p className="advertencia" role="note">
-          <span aria-hidden>⚠</span> {indicador.advertencia}
-        </p>
-      )}
+      <p className="territorio">
+        {indicador.nombre_territorio}
+        {/* Lo que no es una medición directa (estimado, proxy, declarado) se marca en la tarjeta. */}
+        {indicador.tipo !== "observado" && (
+          <span className={`etiqueta-tipo tipo-${indicador.tipo}`}>{ETIQUETA_TIPO[indicador.tipo]}</span>
+        )}
+      </p>
     </article>
   );
 }

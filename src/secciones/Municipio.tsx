@@ -5,6 +5,7 @@ import BarraComposicion from "../componentes/BarraComposicion";
 import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
 import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
+import { NotaMetodo } from "../componentes/notas";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
 import { type ArchivoIndicadores, cargar, claveIndicador, type Indicador } from "../datos";
 
@@ -131,6 +132,10 @@ export default function Municipio() {
 
       <SeccionCapitulo id="municipio-salud">
         <h2 className="titulo-capitulo">Salud por red</h2>
+        <p className="porque">
+          <strong>Por qué importa:</strong> la salud es el equipamiento que más usa la gente. Muestra cuánta red hay y
+          quién la sostiene.
+        </p>
         <div className="rejilla-tarjetas">
           <TarjetaIndicador
             titulo="Establecimientos de salud en la ciudad"
@@ -201,6 +206,10 @@ export default function Municipio() {
 
       <SeccionCapitulo id="municipio-finanzas">
         <h2 className="titulo-capitulo">Ingresos y gastos</h2>
+        <p className="porque">
+          <strong>Por qué importa:</strong> dice con cuánto cuenta la ciudad para invertir en transporte, escuelas y
+          salud.
+        </p>
         <div className="rejilla-tarjetas">
           <TarjetaIndicador
             titulo={`Ingresos ${serieFinanzas.at(-1)?.anio ?? ""}`}
@@ -304,11 +313,11 @@ export default function Municipio() {
         )}
       </SeccionCapitulo>
 
-      <aside className="limitacion">
-        <strong>Antes de comparar años:</strong> los valores de finanzas están en R$ corrientes, sin ajustar por
-        inflación. Los ingresos son realizados y los gastos, empenhados. La salud cuenta establecimientos (no camas ni
-        atenciones) y un mismo establecimiento puede ofrecer varios servicios.
-      </aside>
+      <NotaMetodo titulo="Antes de comparar años">
+        Los valores de finanzas están en R$ corrientes, sin ajustar por inflación. Los ingresos son realizados y los
+        gastos, empenhados. La salud cuenta establecimientos (no camas ni atenciones) y un mismo establecimiento puede
+        ofrecer varios servicios.
+      </NotaMetodo>
     </section>
   );
 }

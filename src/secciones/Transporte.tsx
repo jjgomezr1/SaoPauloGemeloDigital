@@ -5,6 +5,7 @@ import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
 import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
+import { NotaMetodo } from "../componentes/notas";
 import RankingDistritos from "../componentes/RankingDistritos";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
 import {
@@ -125,6 +126,10 @@ export default function Transporte() {
       <Estaciones capitulos={CAPITULOS} />
 
       <SeccionCapitulo id="transporte-cobertura">
+        <p className="porque">
+          <strong>Por qué importa:</strong> vivir cerca de una parada o estación es la condición para llegar al empleo,
+          la escuela o el hospital sin carro. Es la mitad de la pregunta P1.
+        </p>
         <div className="filtros">
           <label>
             Indicador
@@ -183,6 +188,10 @@ export default function Transporte() {
 
       <SeccionCapitulo id="transporte-equipamientos">
         <h2 className="titulo-capitulo">Equipamientos en {nombreTerritorio}</h2>
+        <p className="porque">
+          <strong>Por qué importa:</strong> escuelas, ferias y shoppings son los destinos de todos los días. Dicen qué
+          tan servido está cada distrito, no solo qué tan conectado.
+        </p>
         <div className="rejilla-tarjetas">
           <TarjetaIndicador titulo="Escuelas públicas de educación infantil" indicador={busca("escuelas_infantil")} />
           <TarjetaIndicador titulo="Escuelas públicas fundamental y media" indicador={busca("escuelas_basica")} />
@@ -194,6 +203,10 @@ export default function Transporte() {
       {pasajeros && (
         <SeccionCapitulo id="transporte-pasajeros">
           <h2 className="titulo-capitulo">¿Cuánta gente mueven los buses?</h2>
+          <p className="porque">
+            <strong>Por qué importa:</strong> la cobertura dice dónde hay transporte; los pasajeros dicen cuánto se usa
+            y qué líneas cargan la ciudad.
+          </p>
           <div className="rejilla-dos">
             <div className="panel">
               <h2>Pasajeros por mes en los buses municipales</h2>
@@ -257,12 +270,10 @@ export default function Transporte() {
         </SeccionCapitulo>
       )}
 
-      <aside className="limitacion">
-        <strong>Lo que esta sección no muestra todavía:</strong> estaciones de tren CPTM (GeoSampa las publica en la
-        capa «estacao_trem», pero no están en el catálogo), buses en tiempo real (F09, fuera del lago) y museos (F38,
-        descartada por el equipo). Los pasajeros de 2023 y 2024 no aparecen en el portal de SPTrans con la misma ruta
-        que 2025-2026. Los equipamientos se cuentan donde están, no a qué distancia caminando quedan.
-      </aside>
+      <NotaMetodo titulo="Cobertura y equipamientos">
+        La cobertura usa un radio en línea recta, no la distancia caminando, y no cuenta las estaciones de tren CPTM,
+        que no están en el catálogo. Los equipamientos se cuentan en el distrito donde están.
+      </NotaMetodo>
     </section>
   );
 }

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import BarraComposicion from "../componentes/BarraComposicion";
 import CabeceraSeccion from "../componentes/CabeceraSeccion";
 import ConcentracionDistritos from "../componentes/ConcentracionDistritos";
 import Estaciones, { type Capitulo, SeccionCapitulo } from "../componentes/Estaciones";
 import { ANIMACION, EJE, ESTILO_TOOLTIP, SERIE_1 } from "../componentes/graficos";
 import MapaDistritos from "../componentes/MapaDistritos";
+import { NotaMetodo } from "../componentes/notas";
 import RankingDistritos from "../componentes/RankingDistritos";
 import SelectorAnio from "../componentes/SelectorAnio";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
@@ -18,7 +18,6 @@ import {
   type Indicador,
   type IndiceSeccion,
   metricaPorTerritorio,
-  tieneValor,
 } from "../datos";
 import { useParametro } from "../rutas";
 
@@ -35,36 +34,66 @@ const METRICAS: { clave: string; etiqueta: string; anios?: string[]; municipal: 
     anios: ["2022", "2023", "2024"],
     municipal: true,
   },
-  {
-    clave: "empleos_raza_preta_parda_pct",
-    etiqueta: "Empleos de personas pretas o pardas",
-    anios: ["2023", "2024"],
-    municipal: true,
-  },
-];
-
-const RAZAS = [
-  { clave: "branca", etiqueta: "Blanca" },
-  { clave: "parda", etiqueta: "Parda" },
-  { clave: "preta", etiqueta: "Preta" },
-  { clave: "amarela", etiqueta: "Amarilla" },
-  { clave: "indigena", etiqueta: "Indígena" },
-  { clave: "nao_identificada", etiqueta: "No identificada" },
 ];
 
 const CAPITULOS: Capitulo[] = [
-  { id: "empleo-distritos", titulo: "Distritos" },
-  { id: "empleo-raza", titulo: "Raza o color" },
-  { id: "empleo-evolucion", titulo: "Evolución" },
+  { id: "invertir-perfil", titulo: "Tu negocio" },
+  { id: "invertir-empleo", titulo: "El trabajo" },
+  { id: "invertir-evolucion", titulo: "Evolución" },
 ];
 
-export default function Empleo() {
+// Los dos perfiles de build_web.py (PERFILES_NEGOCIO). «componentes» son las cifras que entran en el índice, con
+// el archivo del que salen; las de más abajo en la lista se leen al revés (menos competencia, más puntos).
+type Perfil = "barrio" | "trabajadores";
+const PERFILES: Record<
+  Perfil,
+  { titulo: string; ejemplo: string; indice: string; componentes: { clave: string; titulo: string }[] }
+> = {
+  barrio: {
+    titulo: "Negocio de barrio",
+    ejemplo: "Panadería, farmacia, gimnasio, peluquería: vive de la gente que vive cerca.",
+    indice: "indice_barrio",
+    componentes: [
+      { clave: "poblacion", titulo: "Población" },
+      { clave: "densidad", titulo: "Densidad" },
+      { clave: "establecimientos_por_mil_hab", titulo: "Competencia: establecimientos por mil habitantes" },
+      { clave: "cobertura_poblacion", titulo: "Población cerca de bus o metro" },
+    ],
+  },
+  trabajadores: {
+    titulo: "Negocio para trabajadores",
+    ejemplo: "Restaurante de almuerzo, café, papelería, servicios a empresas: vive de la gente que llega a trabajar.",
+    indice: "indice_trabajadores",
+    componentes: [
+      { clave: "empleos_formales", titulo: "Empleos formales" },
+      { clave: "empleos_por_hab", titulo: "Empleos por habitante" },
+      { clave: "cobertura_poblacion_metro", titulo: "Población cerca del metro" },
+    ],
+  },
+};
+const ES_PERFIL = (v: string | null): v is Perfil => v === "barrio" || v === "trabajadores";
+
+export default function Invertir() {
   const [indice, setIndice] = useState<IndiceSeccion>();
   const [anioUrl, setAnio] = useParametro("anio");
   const [datosAnio, setDatosAnio] = useState<Indicador[]>([]);
   const [metricaUrl, setMetrica] = useParametro("metrica");
   const [distrito, setDistrito] = useParametro("distrito");
   const [serie, setSerie] = useState<Indicador[]>([]);
+  const [perfilUrl, setPerfil] = useParametro("perfil");
+  const perfil: Perfil = ES_PERFIL(perfilUrl) ? perfilUrl : "barrio";
+  const [negocio, setNegocio] = useState<Indicador[]>([]);
+
+  // El índice y sus componentes: invertir (índices, empleo y competencia por habitante), transporte (población,
+  // densidad, cobertura) y el último año de empleo.
+  useEffect(() => {
+    const invertir = cargar<ArchivoIndicadores>("indicadores/invertir/distritos.json");
+    const transporte = cargar<ArchivoIndicadores>("indicadores/transporte/distritos.json");
+    const empleo = cargar<IndiceSeccion>("indicadores/empleo/indice.json").then((i) =>
+      cargar<ArchivoIndicadores>(`indicadores/empleo/anio_${i.anios[i.anios.length - 1]}.json`),
+    );
+    Promise.all([invertir, transporte, empleo]).then((archivos) => setNegocio(archivos.flatMap((a) => a.indicadores)));
+  }, []);
 
   useEffect(() => {
     cargar<IndiceSeccion>("indicadores/empleo/indice.json").then(setIndice);
@@ -102,15 +131,17 @@ export default function Empleo() {
   const unidadSerie = serie.find((i) => claveIndicador(i) === defSerie.clave)?.unidad;
   const periodoSerie = serieMetrica.length ? `${serieMetrica[0].anio}-${serieMetrica.at(-1)?.anio}` : "";
 
-  const razas = RAZAS.map((r) => ({ ...r, indicador: busca(`empleos_raza_${r.clave}_pct`) }));
-  const hayRaza = razas.some((r) => r.indicador);
+  const defPerfil = PERFILES[perfil];
+  const indicePerfil = useMemo(() => metricaPorTerritorio(negocio, defPerfil.indice), [negocio, defPerfil.indice]);
+  const buscaNegocio = (clave: string) =>
+    negocio.find((i) => i.codigo_territorio === territorio && claveIndicador(i) === clave);
 
   return (
     <section className="seccion">
       <CabeceraSeccion
-        seccion="empleo"
+        seccion="invertir"
         pregunta="P2"
-        titulo="¿Cómo se distribuye el empleo formal entre los distritos?"
+        titulo="¿Dónde conviene montar un negocio en São Paulo?"
         visual={
           <ConcentracionDistritos
             ranking={rankingEmpleos}
@@ -121,14 +152,81 @@ export default function Empleo() {
         }
       >
         <p className="entrada">
-          Empleos y establecimientos con registro formal (RAIS) en los 96 distritos, 2011 a 2024. Muestra dónde trabaja
-          la gente, no dónde vive. Haz clic en un distrito para ver su serie.
+          Dónde hay clientes, cuánta competencia hay y si se llega en transporte público, en los 96 distritos. A la
+          derecha, qué tan concentrado está el empleo formal. Haz clic en un distrito para ver sus cifras.
         </p>
       </CabeceraSeccion>
 
       <Estaciones capitulos={CAPITULOS} />
 
-      <SeccionCapitulo id="empleo-distritos">
+      <SeccionCapitulo id="invertir-perfil">
+        <p className="porque">
+          <strong>Por qué importa:</strong> abrir un negocio es una decisión cara. Antes de mirar locales, conviene
+          saber dónde están los clientes, cuánta competencia hay y si se llega sin carro.
+        </p>
+
+        <fieldset className="selector-perfil">
+          <legend>¿Qué negocio quieres montar?</legend>
+          {(Object.keys(PERFILES) as Perfil[]).map((p) => (
+            <button key={p} type="button" aria-pressed={perfil === p} onClick={() => setPerfil(p)}>
+              <strong>{PERFILES[p].titulo}</strong>
+              <span>{PERFILES[p].ejemplo}</span>
+            </button>
+          ))}
+        </fieldset>
+
+        {distrito && (
+          <div className="filtros">
+            <button type="button" className="boton-secundario" onClick={() => setDistrito(null)}>
+              Volver al municipio
+            </button>
+          </div>
+        )}
+
+        <div className="rejilla-tarjetas">
+          {distrito && (
+            <TarjetaIndicador
+              titulo={`Puntaje de ${nombreTerritorio}`}
+              indicador={buscaNegocio(defPerfil.indice)}
+              destacado
+            />
+          )}
+          {defPerfil.componentes.map((c) => (
+            <TarjetaIndicador key={c.clave} titulo={c.titulo} indicador={buscaNegocio(c.clave)} />
+          ))}
+        </div>
+
+        <div className="rejilla-dos">
+          <div className="panel">
+            <h2>{defPerfil.titulo}: puntaje por distrito</h2>
+            <MapaDistritos
+              valores={indicePerfil.valores}
+              unidad={indicePerfil.unidad}
+              seleccionado={distrito}
+              onSeleccionar={setDistrito}
+            />
+          </div>
+          <RankingDistritos
+            titulo={`Los 10 distritos con más puntaje para un ${defPerfil.titulo.toLowerCase()}`}
+            ranking={indicePerfil.ranking}
+            unidad={indicePerfil.unidad}
+            seleccionado={distrito}
+            onSeleccionar={setDistrito}
+          >
+            <p className="nota">
+              Puntaje relativo de 0 a 100 entre los 96 distritos: dice dónde hay demanda y acceso, no dónde un negocio
+              será rentable.
+            </p>
+          </RankingDistritos>
+        </div>
+      </SeccionCapitulo>
+
+      <SeccionCapitulo id="invertir-empleo">
+        <h2 className="titulo-capitulo">¿Dónde está el trabajo?</h2>
+        <p className="porque">
+          <strong>Por qué importa:</strong> el empleo marca hacia dónde viaja la ciudad cada mañana y dónde hay gente
+          con sueldo a la hora del almuerzo. Cruzado con dónde vive la gente, explica la presión sobre el transporte.
+        </p>
         {/* Los años cambian con el indicador: por sexo desde 2022, por raza o color desde 2023. */}
         <SelectorAnio etiqueta="Año" anios={anios} valor={anio} onCambiar={setAnio} />
 
@@ -166,9 +264,6 @@ export default function Empleo() {
               indicador={busca("empleos_formales_participacion")}
             />
           )}
-          {busca("empleos_femenino_pct") && (
-            <TarjetaIndicador titulo="Empleos ocupados por mujeres" indicador={busca("empleos_femenino_pct")} />
-          )}
         </div>
 
         <div className="rejilla-dos">
@@ -191,35 +286,12 @@ export default function Empleo() {
         </div>
       </SeccionCapitulo>
 
-      <SeccionCapitulo id="empleo-raza">
-        <h2 className="titulo-capitulo">¿Quién ocupa los empleos?</h2>
-        {hayRaza ? (
-          <div className="panel">
-            <h2>
-              Empleos por raza o color en {nombreTerritorio}, {anio}
-            </h2>
-            <BarraComposicion
-              descripcion={`Empleos por raza o color en ${nombreTerritorio}, ${anio}`}
-              sonPorcentajes
-              segmentos={razas
-                .filter((r) => r.indicador && tieneValor(r.indicador))
-                .map((r) => ({ etiqueta: r.etiqueta, valor: r.indicador?.valor ?? 0 }))}
-            />
-            <p className="nota">
-              Fuente {razas.find((r) => r.indicador)?.indicador?.fuente_id} (RAIS vía Infocidade). Raza o color es un
-              dato sensible: solo se publica como porcentaje, y una categoría con menos de 10 empleos no se muestra. En
-              2023, el 10,8 % de los empleos del municipio no tenía raza o color registrada; en 2024, el 2,4 %.
-            </p>
-          </div>
-        ) : (
-          <p className="limitacion">
-            El empleo por raza o color existe solo para 2023 y 2024: elige uno de esos años en la barra de arriba.
-          </p>
-        )}
-      </SeccionCapitulo>
-
-      <SeccionCapitulo id="empleo-evolucion">
+      <SeccionCapitulo id="invertir-evolucion">
         <h2 className="titulo-capitulo">¿Cómo ha cambiado?</h2>
+        <p className="porque">
+          <strong>Por qué importa:</strong> separa una tendencia de la foto de un año: deja ver la crisis de 2015-2016,
+          la pandemia y la recuperación. Por distrito hay que leerla con cuidado (ver la nota del gráfico).
+        </p>
 
         <div className="panel">
           <h2>
@@ -228,7 +300,7 @@ export default function Empleo() {
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={serieMetrica} margin={{ left: 8, right: 16, top: 8 }}>
               <defs>
-                <linearGradient id="empleo-relleno" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="invertir-relleno" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={SERIE_1} stopOpacity={0.35} />
                   <stop offset="100%" stopColor={SERIE_1} stopOpacity={0} />
                 </linearGradient>
@@ -250,7 +322,7 @@ export default function Empleo() {
                 dataKey="valor"
                 stroke={SERIE_1}
                 strokeWidth={2.5}
-                fill="url(#empleo-relleno)"
+                fill="url(#invertir-relleno)"
                 dot={{ r: 4, fill: SERIE_1, strokeWidth: 2, stroke: "var(--superficie)" }}
                 activeDot={{ r: 6, strokeWidth: 3, stroke: "var(--superficie)" }}
                 {...ANIMACION}
@@ -258,16 +330,27 @@ export default function Empleo() {
             </AreaChart>
           </ResponsiveContainer>
           <p className="nota">
-            Desde 2022 la RAIS cambió la forma de captar los datos (nota técnica del MTE): los saltos alrededor de ese
-            año, como el de Brás en 2022, pueden ser del registro y no de la economía.
+            Desde 2022 la RAIS cambió la forma de captar los datos (nota técnica del MTE). Además, cuenta cada empleo
+            donde la empresa registra su sede: cuando una empresa grande la muda, un distrito gana o pierde cientos de
+            miles de empleos de un año a otro (Brás pasó de 73 mil a 420 mil en 2022 y volvió a 76 mil en 2023).
           </p>
         </div>
       </SeccionCapitulo>
 
-      <aside className="limitacion">
-        <strong>Lo que esta sección no muestra todavía:</strong> empleo por sector económico (no está en el lago). El
-        empleo por sexo cubre 2022-2024 (F13-F15) y por raza o color 2023-2024 (F16-F17).
-      </aside>
+      <NotaMetodo titulo="Cómo se calcula el puntaje">
+        Cada componente se ordena entre los 96 distritos y se convierte en percentil (0 a 100); el puntaje es el
+        promedio. En el negocio de barrio la competencia cuenta al revés: menos establecimientos por habitante, más
+        puntos. Es un indicador proxy: no hay arriendos, precios del suelo, ingresos ni sectores en el lago, así que no
+        mide rentabilidad.
+      </NotaMetodo>
+      <NotaMetodo titulo="Por qué el puntaje no usa el crecimiento del empleo">
+        La RAIS cuenta los empleos donde la empresa registra su sede, y las mudanzas de sede mueven cientos de miles de
+        empleos entre distritos de un año a otro. Un «distrito que crece» podría ser solo una empresa que cambió de
+        dirección.
+      </NotaMetodo>
+      <NotaMetodo titulo="Años disponibles">
+        El empleo total cubre 2011-2024 (F11-F12) y por sexo 2022-2024 (F13-F15).
+      </NotaMetodo>
     </section>
   );
 }

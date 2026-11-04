@@ -34,11 +34,11 @@ const RAMALES: Ramal[] = [
     detalle: "Edificios y capas de GeoSampa",
   },
   {
-    seccion: "empleo",
+    seccion: "invertir",
     linea: LINEAS.amarilla,
     puntos: [SE, [400, 320], [250, 320]],
     lado: "izquierda",
-    detalle: "P2 · Empleo formal por distrito",
+    detalle: "P2 · Dónde montar un negocio",
   },
   {
     seccion: "gente",
@@ -69,11 +69,11 @@ const RAMALES: Ramal[] = [
     detalle: "Catálogo y diccionario",
   },
   {
-    seccion: "no-cubrimos",
-    linea: LINEAS.plata,
+    seccion: "equidad",
+    linea: LINEAS.coral,
     puntos: [SE, [500, 400]],
     lado: "derecha",
-    detalle: "Lo que el lago no responde",
+    detalle: "P3 · Favelas y servicios",
   },
 ];
 
