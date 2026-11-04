@@ -18,7 +18,7 @@ from config import DATA, RAW, USER_AGENT
 
 REPOSITORIO = "sherrerah3/SaoPauloGemeloDigital"
 # Para usar otra copia: cambiar la etiqueta y subir el nuevo crudos.zip a un release con ese nombre.
-ETIQUETA = "crudos-2026-10-27"
+ETIQUETA = "crudos-2026-11-03"
 URL = f"https://github.com/{REPOSITORIO}/releases/download/{ETIQUETA}/crudos.zip"
 ZIP = DATA / "crudos.zip"
 
