@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import CodigoPregunta from "../componentes/CodigoPregunta";
 import DiagramaRed from "../componentes/DiagramaRed";
+import PreguntasPortada from "../componentes/PreguntasPortada";
 import TarjetaIndicador from "../componentes/TarjetaIndicador";
 import { type ArchivoIndicadores, cargar, claveIndicador, type Indicador, type IndiceSeccion } from "../datos";
-import { SECCIONES } from "../rutas";
 
 // Versiones WebP de herramientas/fotos_webp.py; el navegador elige el ancho según la pantalla.
 const FOTOS = `${import.meta.env.BASE_URL}fotos/`;
@@ -22,7 +21,6 @@ export default function Panorama() {
   }, []);
 
   const busca = (clave: string) => municipio.find((i) => claveIndicador(i) === clave);
-  const listas = SECCIONES.filter((s) => s.lista).length;
 
   return (
     <section className="seccion">
@@ -49,24 +47,7 @@ export default function Panorama() {
         </p>
       </header>
 
-      <div className="preguntas">
-        <a href="#transporte" className="pregunta pregunta-p1">
-          <CodigoPregunta codigo="P1" />
-          <div className="pregunta-cuerpo">
-            <h2>¿Qué tan cubierta está la ciudad por transporte público, y dónde se concentran los equipamientos?</h2>
-            <p>Buses, tren, metro, centros comerciales, mercados y equipamientos deportivos.</p>
-            <span className="pregunta-accion">Ver cobertura de transporte</span>
-          </div>
-        </a>
-        <a href="#empleo" className="pregunta pregunta-p2">
-          <CodigoPregunta codigo="P2" />
-          <div className="pregunta-cuerpo">
-            <h2>¿Cómo se distribuye el empleo formal entre los distritos?</h2>
-            <p>Por distrito, por sexo y por raza o color.</p>
-            <span className="pregunta-accion">Ver empleo por distrito</span>
-          </div>
-        </a>
-      </div>
+      <PreguntasPortada />
 
       <div className="panel panel-red">
         <div className="panel-cabecera">
@@ -86,10 +67,6 @@ export default function Panorama() {
         <TarjetaIndicador titulo="Empleos formales en la ciudad" indicador={busca("empleos_formales")} destacado />
         <TarjetaIndicador titulo="Población (censo 2022)" indicador={busca("poblacion")} />
       </div>
-      <p className="nota">
-        Pendientes para esta portada: estimación de población del IBGE (F08) y finanzas municipales (F04). Secciones con
-        datos: {listas} de {SECCIONES.length}.
-      </p>
     </section>
   );
 }
