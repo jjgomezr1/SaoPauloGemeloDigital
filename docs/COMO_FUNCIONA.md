@@ -67,18 +67,20 @@ Vite, React y TypeScript (`src/`). Cada sección baja solo los archivos que nece
 
 | Sección | Qué muestra |
 |---|---|
-| Panorama | Las dos preguntas y las cifras clave de la ciudad. |
+| Panorama | Las tres preguntas y las cifras clave de la ciudad. |
 | Mapa 3D | La ciudad en 3D con las capas de GeoSampa. |
-| Empleo (P2) | Empleo formal por distrito y año, por sexo y por raza o color. |
+| Invertir (P2) | Dónde conviene montar un negocio: dos perfiles (barrio y trabajadores) con un puntaje proxy por distrito, el empleo formal y su evolución. |
+| Equidad (P3) | Transporte, empleo, deporte y escuelas en los distritos con más y menos favelas; empleo por raza o color y sexo. |
 | Transporte y equipamientos (P1) | Cobertura de transporte, pasajeros, escuelas, deporte, ferias y shoppings. |
-| Gente | Población, densidad y favelas por distrito; área construida residencial; población desde 1872; IDH municipal por subprefeitura (2000 y 2010); nacimientos por distrito (2023-2025). |
+| Gente | Población, densidad y favelas por distrito; población desde 1872; IDH municipal por subprefeitura (2000 y 2010); nacimientos por distrito (2023-2025). |
 | Municipio | Establecimientos de salud por red (F03) y finanzas del municipio: ingresos y gastos 2016-2025 (F04). Cifras de ciudad, sin desglose por distrito. |
 | Ambiente | Vegetación por subprefeitura en 2010, 2015 y 2020; temperatura mínima de 1933 a 2025. |
 | Fuentes y método | El catálogo y el diccionario, generados desde el Excel. |
-| Lo que no cubrimos | Lo que el lago no permite responder. |
 
-- **Tarjetas.** Cada cifra se muestra con su fuente, entidad, vigencia, tipo y advertencia
-  (`TarjetaIndicador.tsx`).
+- **Tarjetas y notas.** La tarjeta muestra solo la cifra, su territorio y un número. Ese número remite al bloque
+  «Fuentes y notas» del final de la sección, con la fuente, la entidad, la vigencia, el tipo, el cálculo y la
+  advertencia de cada cifra, más las notas de método de la sección (`TarjetaIndicador.tsx`, `notas.tsx`).
+- **Por qué importa.** Cada capítulo abre con una línea que dice qué pregunta ayuda a responder.
 - **Mapa por distrito y ranking.** `MapaDistritos.tsx` colorea distritos (o subprefeituras) en cinco cuantiles;
   `RankingDistritos.tsx` muestra los 10 primeros o la tabla completa. Un clic en cualquiera de los dos selecciona
   el territorio.

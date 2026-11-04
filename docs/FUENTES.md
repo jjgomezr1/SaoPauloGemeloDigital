@@ -4,8 +4,9 @@ Qué fuente del Diccionario (`data/Diccionario_de_datos_TallerDatos.xlsx`) entra
 dónde aparece. Los IDs son los de la hoja «1. Fuentes». El detalle de cada campo está en la hoja
 «2. Diccionario» y, ya exportado, en `data/diccionario.csv` y en la sección «Fuentes y método» del sitio.
 
-Resumen: de las 41 fuentes del catálogo, 35 están en el lago y se publican; 6 quedan por fuera (al final,
-con el motivo).
+Resumen: de las 41 fuentes del catálogo, 32 se publican en el sitio, 3 están solo en el lago (F23, F24 y F28) y
+6 quedan por fuera (al final, con el motivo). La sección «Fuentes y método» del sitio calcula este estado a
+partir de lo que de verdad se publica (`build_web.py`, `MOTIVOS_NO_PUBLICADA`).
 
 ## P1. Transporte y equipamientos
 
@@ -48,7 +49,7 @@ captar los datos; cada tarjeta lo advierte.
 | ID | Qué es | Publica | Para qué se usa | Archivo del lago |
 |---|---|---|---|---|
 | F32 | Favelas (polígonos) | SEHAB/HABITASAMPA, vía GeoSampa | Favelas, domicilios en favelas (número y % de los domicilios del censo) y % del área, por distrito. Capa del mapa 3D con el nombre de cada favela, sin su calle. | `geo/favelas.geojson` (no se sube: trae la calle y la propiedad del terreno, que son Sensibles) |
-| F28 | Área construida residencial (catastro del IPTU), 1995-2025 | Prefeitura, vía Infocidade | Serie de la ciudad en la sección Gente. La fuente no la abre por distrito. | `area_construida_residencial.csv` |
+| F28 | Área construida residencial (catastro del IPTU), 1995-2025 | Prefeitura, vía Infocidade | Solo en el lago: el sitio dejó de mostrarla porque es una sola cifra para la ciudad, sin relación con P1 ni P2. | `area_construida_residencial.csv` |
 | F01 | Población histórica, 1872-2022 | IBGE (censos), vía Infocidade | Población de cada censo en Brasil, el Estado, la Región Metropolitana y el municipio (la RM desde 1980). Gráfico de la sección Gente. | `poblacion_historica.csv` |
 | F07 | IDH municipal (IDHM), 2000 y 2010 | PNUD/FJP/IPEA (Atlas 2013), vía Infocidade | IDHM e IDHM Renda por subprefeitura. La fuente trae 31 prefeituras regionales: Sapopemba (subprefeitura desde 2013) está dentro de Vila Prudente y queda sin cifra. Longevidad y educación están en la fuente, pero no son campos del Diccionario y no se guardan. | `idhm.csv` |
 | F18, F19, F20 | Nacidos vivos y tipo de parto: 2025, 2024 y 2023 | SMS (SINASC), vía Infocidade | Nacimientos por distrito y año, y por mil habitantes (población del censo 2022, F41). Solo el total: `tipo_parto` es Sensible. En 2024 y 2025 el 16 % de los nacimientos no tiene distrito (en 2023, 0,05 %). | `nacimientos_tipo_parto.csv` (no se sube: trae el tipo de parto, que es Sensible) |
@@ -84,11 +85,11 @@ años directamente.
   datos de © colaboradores de [OpenStreetMap](https://www.openstreetmap.org). Más detalle en
   [COMO_FUNCIONA.md](COMO_FUNCIONA.md#el-mapa-3d).
 
-## Fuentes del catálogo que no entran (todavía)
+## Fuentes rastreadas que no entraron al lago
 
 | ID | Qué es | Por qué no está |
 |---|---|---|
-| F02 | Visitas al artículo «São Paulo» en Wikipedia | No responde ninguna de las dos preguntas. |
+| F02 | Visitas al artículo «São Paulo» en Wikipedia | No responde ninguna de las preguntas. |
 | F08 | Estimación de población del IBGE | La API (`servicodados.ibge.gov.br`) no respondía al integrarla, en octubre de 2026. |
 | F09 | Olho Vivo (buses en tiempo real) | Necesita llave y un servidor; el sitio es estático. |
 | F10 | Tráfico del portal de datos abiertos | Descartada en el catálogo. |
@@ -102,8 +103,12 @@ formato, nueve fuentes oficiales más para una segunda etapa: atractivos turíst
 de GeoSampa, demanda por estación del Metrô y hospedajes de CADASTUR. Ese archivo numera sus fuentes de F42 a
 F50; si se integran al Excel principal, conviene revisar que esos IDs sigan libres.
 
-## Estado en el Excel
+## El Excel
 
-La columna «Estado» del Excel todavía marca como «Candidata» las fuentes que ya están integradas.
-`verificar.py` lo avisa al final. Hay que cambiarlo a «Integrada al lago» en el Excel original (este
-repositorio no lo modifica) y volver a correr `exportar_excel.py`.
+Desde el 2026-11-03 el Excel tiene solo las 35 fuentes que están en el lago, como pide la entrega:
+- todas con estado «Integrada al lago»;
+- la fecha de prueba es la de la descarga que usa el lago (la del nombre del crudo en `data/raw/`);
+- la licencia es la que declara la fuente, o «no declara» a secas;
+- la columna «Archivo o tabla en el lago» del diccionario nombra el archivo real.
+
+Las seis que no entraron (tabla de arriba) siguen en el sitio, en `FUERA_DEL_LAGO` de `build_web.py`.
