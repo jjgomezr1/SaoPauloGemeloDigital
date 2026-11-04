@@ -456,6 +456,13 @@ def verificar_publico():
 def main():
     verificar_catalogo()
     verificar_lago()
+    if fallas:
+        # Sin el lago completo las pruebas de cada tema no pueden leer sus archivos. Los que no se suben al
+        # repositorio (Sensibles o pesados, ver .gitignore) se generan con el pipeline.
+        sys.exit(
+            f"\n{len(fallas)} fallas en el lago: falta algún archivo o columna. "
+            "Corre primero `npm run datos` (o `docker compose run --rm datos`)."
+        )
     verificar_territorio()
     verificar_empleo()
     verificar_composicion_empleo()

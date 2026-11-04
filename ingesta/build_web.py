@@ -17,6 +17,7 @@ import shapely
 
 import calculos_equipamientos
 import calculos_p1
+from calculos_p1 import DERIVADOS
 from comun import cargar_equivalencias, unir_distritos, unir_subprefeituras
 from config import (
     CAMPOS_SENSIBLES,
@@ -853,7 +854,7 @@ ADVERTENCIA_DOMICILIOS_FAVELA = "No se sabe si los domicilios de la capa son un 
 
 
 def construir_gente():
-    """Favelas por distrito (F32) y área construida residencial del municipio (F28)."""
+    """Favelas por distrito (F32), población histórica (F01), IDHM (F07) y nacimientos (F18-F20)."""
     res = calculos_equipamientos.favelas_por_distrito()
     nombres_dist, _ = nombres_visibles()
     vig = vigencia_descarga("geosampa_favelas")
@@ -920,23 +921,8 @@ def construir_gente():
     cabecera = {"seccion": "gente", "pregunta": "", "generado": dt.date.today().isoformat()}
     publicar("indicadores/gente/distritos.json", {**cabecera, "indicadores": registros})
 
-    area = pd.read_csv(LAGO / "area_construida_residencial.csv")
-    serie = [
-        indicador(
-            campo_lago="area_residencial_m2",
-            valor=fila.area_residencial_m2 / 1e6,
-            unidad="km²",
-            nivel="municipio",
-            codigo="MSP",
-            nombre="Município de São Paulo",
-            fuente_id="F28",
-            vigencia=fila.anio,
-            calculo="área construida residencial del catastro del IPTU (enero de cada año) / 1.000.000",
-        )
-        for fila in area.itertuples()
-    ]
-    publicar("indicadores/gente/area_construida.json", {**cabecera, "indicadores": serie})
-
+    # F28 (área construida residencial) sigue en el lago, pero el sitio ya no la muestra: es una sola cifra
+    # para la ciudad, sin relación con P1 ni P2.
     construir_poblacion_historica(cabecera)
     construir_idhm(cabecera)
     construir_nacimientos(cabecera)
@@ -1226,6 +1212,308 @@ def construir_temperatura():
     publicar("indicadores/ambiente/temperatura.json", {**cabecera, "indicadores": registros})
 
 
+# --- P2: dónde conviene montar un negocio ---------------------------------------------------------------
+# Dos perfiles, cada uno el promedio de percentiles (0-100) de sus componentes entre los 96 distritos. Es un
+# indicador PROXY: dice dónde hay demanda y acceso, no dónde un negocio es rentable (no hay arriendos, ingresos
+# ni sectores en el lago). El cambio del empleo por distrito no entra: la RAIS registra los empleos donde está la
+# sede de la empresa, y una mudanza de sede mueve cientos de miles de empleos de un año a otro (Sé, Brás).
+PERFILES_NEGOCIO = {
+    "indice_barrio": {
+        "componentes": {
+            "poblacion": 1,
+            "densidad_hab_km2": 1,
+            "establecimientos_por_mil_hab": -1,
+            "cobertura_poblacion_pct": 1,
+        },
+        "calculo": "promedio de percentiles entre los 96 distritos: población, densidad, cobertura de transporte "
+        "y, al revés, establecimientos formales por mil habitantes (menos competencia, más puntos)",
+        "fuente": "F41",
+        "campo": "poblacion",
+        "adicionales": ["F11", "F30", "F36"],
+    },
+    "indice_trabajadores": {
+        "componentes": {"empleos_formales": 1, "empleos_por_hab": 1, "cobertura_poblacion_metro_pct": 1},
+        "calculo": "promedio de percentiles entre los 96 distritos: empleos formales, empleos por habitante y "
+        "población a 500 m del metro",
+        "fuente": "F12",
+        "campo": "empleos_formales",
+        "adicionales": ["F41", "F36"],
+    },
+}
+ADVERTENCIA_PERFIL = (
+    "Índice relativo entre distritos (0-100), no rentabilidad: no incluye arriendos, ingresos ni sector económico. "
+    "La RAIS cuenta los empleos donde la empresa registra su sede."
+)
+
+
+def tabla_distritos() -> pd.DataFrame:
+    """Población, transporte, equipamientos, favelas y empleo 2024 por distrito, desde lo ya calculado."""
+    cob = pd.read_csv(DERIVADOS / "cobertura_transporte_distrito.csv", dtype={"codigo_distrito": str})
+    equ = pd.read_csv(DERIVADOS / "equipamientos_distrito.csv", dtype={"codigo_distrito": str})
+    fav = pd.read_csv(DERIVADOS / "favelas_distrito.csv", dtype={"codigo_distrito": str})
+    emp = leer_por_unidad("establecimientos_empleos.csv")
+    anio_empleo = int(emp["anio"].max())
+    emp = emp[(emp.nivel == "distrito") & (emp.anio == anio_empleo)][
+        ["codigo_distrito", "empleos_formales", "establecimientos_formales"]
+    ]
+    t = (
+        cob.merge(equ.drop(columns=["area_km2", "poblacion"]), on="codigo_distrito")
+        .merge(fav.drop(columns=["area_km2"]), on="codigo_distrito")
+        .merge(emp, on="codigo_distrito")
+        .set_index("codigo_distrito")
+    )
+    if len(t) != 96:
+        raise ValueError(f"tabla_distritos: {len(t)} distritos en lugar de 96")
+    t["empleos_por_hab"] = t.empleos_formales / t.poblacion
+    t["establecimientos_por_mil_hab"] = t.establecimientos_formales / t.poblacion * 1000
+    t.attrs["anio_empleo"] = anio_empleo
+    return t
+
+
+def construir_invertir():
+    t = tabla_distritos()
+    anio = t.attrs["anio_empleo"]
+    nombres_dist, _ = nombres_visibles()
+    vig_censo = "2022"
+    registros = []
+
+    def agregar(clave, valor, unidad, codigo, nombre, nivel, **extra):
+        registros.append(
+            indicador(clave=clave, valor=valor, unidad=unidad, nivel=nivel, codigo=codigo, nombre=nombre, **extra)
+        )
+
+    # Componentes nuevos: empleo y competencia por habitante (empleo de un año, población del censo 2022).
+    msp = t[["empleos_formales", "establecimientos_formales", "poblacion"]].sum()
+    filas = [(c, nombres_dist[c], "distrito", f) for c, f in t.iterrows()]
+    filas.append(("MSP", "Município de São Paulo", "municipio", None))
+    for codigo, nombre, nivel, fila in filas:
+        emp_hab = fila.empleos_por_hab if fila is not None else msp.empleos_formales / msp.poblacion
+        est_mil = (
+            fila.establecimientos_por_mil_hab
+            if fila is not None
+            else msp.establecimientos_formales / msp.poblacion * 1000
+        )
+        agregar(
+            "empleos_por_hab",
+            emp_hab,
+            "empleos por habitante",
+            codigo,
+            nombre,
+            nivel,
+            campo_lago="empleos_formales",
+            fuente_id="F12",
+            vigencia=anio,
+            tipo="estimado",
+            fuentes_adicionales=["F41"],
+            calculo=f"empleos formales {anio} / población del censo {vig_censo}",
+            advertencia="Más de 1 indica un distrito «oficina»: llega más gente a trabajar de la que vive.",
+        )
+        agregar(
+            "establecimientos_por_mil_hab",
+            est_mil,
+            "establecimientos por mil habitantes",
+            codigo,
+            nombre,
+            nivel,
+            campo_lago="establecimientos_formales",
+            fuente_id="F11",
+            vigencia=anio,
+            tipo="estimado",
+            fuentes_adicionales=["F41"],
+            calculo=f"establecimientos formales {anio} / población del censo {vig_censo} × 1.000",
+        )
+
+    for clave, perfil in PERFILES_NEGOCIO.items():
+        partes = [
+            t[c].rank(pct=True) * 100 if s > 0 else (1 - t[c].rank(pct=True)) * 100 + 100 / len(t)
+            for c, s in perfil["componentes"].items()
+        ]
+        puntaje = pd.concat(partes, axis=1).mean(axis=1)
+        for codigo, valor in puntaje.items():
+            agregar(
+                clave,
+                valor,
+                "puntos (0-100)",
+                codigo,
+                nombres_dist[codigo],
+                "distrito",
+                campo_lago=perfil["campo"],
+                fuente_id=perfil["fuente"],
+                vigencia=anio,
+                tipo="proxy",
+                fuentes_adicionales=perfil["adicionales"],
+                calculo=perfil["calculo"],
+                advertencia=ADVERTENCIA_PERFIL,
+            )
+    cabecera = {"seccion": "invertir", "pregunta": "P2", "generado": dt.date.today().isoformat()}
+    publicar("indicadores/invertir/distritos.json", {**cabecera, "indicadores": registros})
+
+
+# --- P3: ¿los distritos con más favelas reciben menos? ---------------------------------------------------
+# Se comparan el 25 % de los distritos con más domicilios en favelas y el 25 % con menos. Cada tasa se calcula
+# sobre la suma del grupo (ponderada por población), no como promedio de tasas.
+TASAS_EQUIDAD = {
+    "cobertura_poblacion": (
+        "poblacion_cubierta",
+        "poblacion",
+        100,
+        "% de la población",
+        "F41",
+        "poblacion",
+        ["F30", "F36"],
+        "población a 500 m de una parada o estación / población",
+    ),
+    "cobertura_poblacion_metro": (
+        "poblacion_cubierta_metro",
+        "poblacion",
+        100,
+        "% de la población",
+        "F41",
+        "poblacion",
+        ["F36"],
+        "población a 500 m del metro / población",
+    ),
+    "escuelas_infantil_por_10mil": (
+        "escuelas_infantil",
+        "poblacion",
+        10_000,
+        "escuelas por 10 mil habitantes",
+        "F39",
+        "codigo_equipamento",
+        ["F41"],
+        "escuelas infantiles públicas / población × 10.000",
+    ),
+    "escuelas_basica_por_10mil": (
+        "escuelas_basica",
+        "poblacion",
+        10_000,
+        "escuelas por 10 mil habitantes",
+        "F40",
+        "codigo_equipamento",
+        ["F41"],
+        "escuelas públicas fundamental y media / población × 10.000",
+    ),
+    "centros_deportivos_por_100mil": (
+        "centros_deportivos",
+        "poblacion",
+        100_000,
+        "centros por 100 mil habitantes",
+        "F33",
+        "id_equipamiento",
+        ["F41"],
+        "centros deportivos / población × 100.000",
+    ),
+    "empleos_por_hab": (
+        "empleos_formales",
+        "poblacion",
+        1,
+        "empleos por habitante",
+        "F12",
+        "empleos_formales",
+        ["F41"],
+        "empleos formales / población del censo 2022",
+    ),
+}
+GRUPOS_FAVELAS = {
+    "mas_favelas": "El 25 % de los distritos con más domicilios en favelas",
+    "menos_favelas": "El 25 % de los distritos con menos domicilios en favelas",
+    "MSP": "Município de São Paulo",
+}
+
+
+def construir_equidad():
+    t = tabla_distritos()
+    corte_alto = t.domicilios_favela_pct.quantile(0.75)
+    corte_bajo = t.domicilios_favela_pct.quantile(0.25)
+    grupos = {
+        "mas_favelas": t[t.domicilios_favela_pct >= corte_alto],
+        "menos_favelas": t[t.domicilios_favela_pct <= corte_bajo],
+        "MSP": t,
+    }
+    vig = {"F41": "2022", "F30": vigencia_descarga("geosampa_ponto_onibus"), "F12": str(t.attrs["anio_empleo"])}
+    registros = []
+    for codigo, g in grupos.items():
+        nombre = f"{GRUPOS_FAVELAS[codigo]} ({len(g)} distritos)" if codigo != "MSP" else GRUPOS_FAVELAS[codigo]
+        nivel = "municipio" if codigo == "MSP" else "grupo"
+        registros.append(
+            indicador(
+                clave="domicilios_favela_pct",
+                campo_lago="domicilios",
+                valor=g.domicilios_favela.sum() / g.domicilios.sum() * 100,
+                unidad="% de los domicilios",
+                nivel=nivel,
+                codigo=codigo,
+                nombre=nombre,
+                fuente_id="F32",
+                vigencia="2022",
+                tipo="estimado",
+                fuentes_adicionales=["F41"],
+                calculo="domicilios en favelas del grupo / domicilios del censo del grupo × 100",
+            )
+        )
+        for clave, (num, den, escala, unidad, fuente, campo, adic, calc) in TASAS_EQUIDAD.items():
+            registros.append(
+                indicador(
+                    clave=clave,
+                    campo_lago=campo,
+                    valor=g[num].sum() / g[den].sum() * escala,
+                    unidad=unidad,
+                    nivel=nivel,
+                    codigo=codigo,
+                    nombre=nombre,
+                    fuente_id=fuente,
+                    vigencia=vig.get(fuente, "2026"),
+                    tipo="estimado",
+                    fuentes_adicionales=adic,
+                    calculo=f"{calc}, sumando los distritos del grupo",
+                )
+            )
+    # Por distrito, para el gráfico de dispersión: % de domicilios en favelas contra cada tasa.
+    nombres_dist, _ = nombres_visibles()
+    for codigo, fila in t.iterrows():
+        for clave, (num, den, escala, unidad, fuente, campo, adic, calc) in TASAS_EQUIDAD.items():
+            registros.append(
+                indicador(
+                    clave=clave,
+                    campo_lago=campo,
+                    valor=fila[num] / fila[den] * escala,
+                    unidad=unidad,
+                    nivel="distrito",
+                    codigo=codigo,
+                    nombre=nombres_dist[codigo],
+                    fuente_id=fuente,
+                    vigencia=vig.get(fuente, "2026"),
+                    tipo="estimado",
+                    fuentes_adicionales=adic,
+                    calculo=calc,
+                )
+            )
+        registros.append(
+            indicador(
+                clave="domicilios_favela_pct",
+                campo_lago="domicilios",
+                valor=fila.domicilios_favela_pct,
+                unidad="% de los domicilios",
+                nivel="distrito",
+                codigo=codigo,
+                nombre=nombres_dist[codigo],
+                fuente_id="F32",
+                vigencia="2022",
+                tipo="estimado",
+                fuentes_adicionales=["F41"],
+                calculo="domicilios en favelas / domicilios del censo × 100",
+            )
+        )
+    cabecera = {
+        "seccion": "equidad",
+        "pregunta": "P3",
+        "generado": dt.date.today().isoformat(),
+        "corte_mas_favelas_pct": round(float(corte_alto), 2),
+        "corte_menos_favelas_pct": round(float(corte_bajo), 2),
+    }
+    publicar("indicadores/equidad/grupos.json", {**cabecera, "indicadores": registros})
+
+
 def construir_municipio():
     """F03 salud por red y F04 finanzas del municipio. Dos tablas de ciudad (sin desglose por distrito).
 
@@ -1312,9 +1600,99 @@ def construir_municipio():
     )
 
 
+# Fuentes del lago que el sitio no muestra, y por qué. Las que sí salen se detectan solas (fuentes_publicadas).
+MOTIVOS_SOLO_LAGO = {
+    "F23": "Está en el lago para comparar shoppings entre años; el sitio muestra solo 2025 (F22).",
+    "F24": "Está en el lago para comparar shoppings entre años; el sitio muestra solo 2025 (F22).",
+    "F28": "Está en el lago, pero el sitio no la muestra: es una sola cifra para la ciudad, sin relación con P1 ni P2.",
+}
+
+# Fuentes rastreadas que no entraron al lago. Ya no están en el Excel (la entrega pide dejar ahí solo lo que
+# está en el lago), pero el catálogo del sitio las sigue contando, con su motivo.
+FUERA_DEL_LAGO = [
+    (
+        "F02",
+        "Vistas mensuales del artículo «São Paulo» en Wikipedia",
+        "Wikimedia",
+        "No integrada",
+        "No responde ninguna de las preguntas.",
+    ),
+    (
+        "F08",
+        "Población estimada de São Paulo (API de Agregados del IBGE)",
+        "IBGE",
+        "No integrada",
+        "La API del IBGE no respondía al integrarla (octubre de 2026); la población sale del censo 2022 (F41).",
+    ),
+    (
+        "F09",
+        "API Olho Vivo / GTFS de SPTrans",
+        "SPTrans",
+        "No integrada",
+        "Buses en tiempo real: pide un token que se renueva y un servidor, y el sitio es estático.",
+    ),
+    (
+        "F10",
+        "Tráfego mensal do Portal de Dados Abertos",
+        "CGM São Paulo",
+        "Descartada",
+        "Descartada en el catálogo: no responde ninguna de las preguntas.",
+    ),
+    (
+        "F37",
+        "Curva maestra (curvas de nivel)",
+        "PMSP - SMUL (GeoSampa)",
+        "No integrada",
+        "Demasiado pesada para un sitio estático.",
+    ),
+    (
+        "F38",
+        "Museos",
+        "PMSP - SMC (GeoSampa)",
+        "Descartada",
+        "Descartada por el equipo: lleva el sistema hacia el turismo, fuera de P1 y P2.",
+    ),
+]
+
+
+def fuentes_publicadas() -> set[str]:
+    """Las fuentes que aparecen en algún indicador o capa de public/data/."""
+    usadas = set()
+    for ruta in PUBLIC_DATA.rglob("*"):
+        if ruta.suffix not in (".json", ".geojson") or "catalogo" in ruta.parts:
+            continue
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+        if not isinstance(datos, dict):
+            continue
+        if datos.get("fuente_id"):
+            usadas.add(datos["fuente_id"])
+        for i in datos.get("indicadores", []):
+            usadas.add(i["fuente_id"])
+            usadas.update(i.get("fuentes_adicionales") or [])
+    return usadas
+
+
 def construir_catalogo():
+    """Va al final: el estado de cada fuente en el sitio sale de lo que de verdad se publicó.
+
+    El sitio muestra «estado_sitio» y, si la fuente no se publica, el motivo. Suma las fuentes que no entraron
+    al lago (FUERA_DEL_LAGO), que ya no están en el Excel.
+    """
     fuentes = pd.read_csv(FUENTES_CSV, dtype=str).fillna("")
     dicc = pd.read_csv(DICCIONARIO_CSV, dtype=str).fillna("")
+    usadas = fuentes_publicadas()
+    sin_motivo = set(fuentes["fuente_id"]) - usadas - set(MOTIVOS_SOLO_LAGO)
+    if sin_motivo:
+        raise ValueError(f"Fuentes del lago sin publicar y sin motivo en MOTIVOS_SOLO_LAGO: {sorted(sin_motivo)}")
+    fuentes["estado_sitio"] = ["En el sitio" if f in usadas else "Solo en el lago" for f in fuentes["fuente_id"]]
+    fuentes["motivo"] = [MOTIVOS_SOLO_LAGO.get(f, "") if f not in usadas else "" for f in fuentes["fuente_id"]]
+    fuera = pd.DataFrame(
+        [
+            {"fuente_id": f, "nombre": n, "entidad": e, "estado_sitio": estado, "motivo": m}
+            for f, n, e, estado, m in FUERA_DEL_LAGO
+        ]
+    )
+    fuentes = pd.concat([fuentes, fuera], ignore_index=True).fillna("").sort_values("fuente_id")
     publicar("catalogo/fuentes.json", fuentes.to_dict(orient="records"))
     publicar("catalogo/diccionario.json", dicc.to_dict(orient="records"))
 
@@ -1322,7 +1700,6 @@ def construir_catalogo():
 def main():
     if PUBLIC_DATA.exists():
         shutil.rmtree(PUBLIC_DATA)
-    construir_catalogo()
     construir_territorio()
     construir_empleo()
     construir_transporte()
@@ -1331,6 +1708,9 @@ def main():
     construir_municipio()
     construir_ambiente()
     construir_temperatura()
+    construir_invertir()
+    construir_equidad()
+    construir_catalogo()
 
 
 if __name__ == "__main__":
